@@ -28,7 +28,7 @@ const CartScreen = ({ cart, setCart }) => {
 
     // Tính tổng giá trị giỏ hàng
     const getTotalPrice = () => {
-        return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+        return cart.reduce((total, item) => total + item.list_price * item.quantity, 0);
     };
 
     return (
@@ -43,11 +43,11 @@ const CartScreen = ({ cart, setCart }) => {
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
                         <View style={styles.cartItem}>
-                            <Image source={{ uri: item.image }} style={styles.cartImage} />
+                            <Image source={{ uri: `data:image/png;base64,${item.image_medium}` }} style={styles.cartImage} />
                             <View style={styles.cartInfo}>
                                 <Text style={styles.cartName}>{item.name}</Text>
                                 <Text style={styles.cartPrice}>
-                                    {item.price.toLocaleString()}đ
+                                    {item.list_price.toLocaleString()}đ
                                 </Text>
                                 <View style={styles.quantityContainer}>
                                     <TouchableOpacity

@@ -4,9 +4,9 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 const ProductItem = ({ item, onPress }) => {
     return (
         <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.7}>
-            <Image source={{ uri: item.image }} style={styles.productImage} />
+            <Image source={{ uri: `data:image/png;base64,${item.image_medium}` }} style={styles.productImage} />
             <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productPrice}>{item.price.toLocaleString()}đ</Text>
+            <Text style={styles.productPrice}>{item.list_price.toLocaleString()}đ</Text>
         </TouchableOpacity>
     );
 };

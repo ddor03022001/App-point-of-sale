@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, FlatList, TextInput, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, FlatList, TextInput, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import ProductItem from '../components/ProductItem';
+import { fetchProducts } from '../api/odooApi';
 
 const productList = [
     { id: '1', name: 'Dưa lê hồng kim', price: 100000, image: 'https://via.placeholder.com/100' },
@@ -11,6 +12,23 @@ const productList = [
 
 const HomeScreen = ({ cart, setCart }) => {
     const [searchQuery, setSearchQuery] = useState('');
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadProducts = async () => {
+            try {
+                const data = await fetchProducts();
+                setProducts(data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadProducts();
+    }, []);
 
     const addToCart = (item) => {
         const itemExists = cart.find((p) => p.id === item.id);
@@ -24,9 +42,11 @@ const HomeScreen = ({ cart, setCart }) => {
     };
 
     // Lọc sản phẩm theo tên
-    const filteredProducts = productList.filter(product =>
+    const filteredProducts = products.filter(product =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ).slice(0, 6);
+
+    if (loading) return <ActivityIndicator size="large" />;
 
     return (
         <View style={styles.container}>

@@ -16,6 +16,7 @@ const loginOdoo = async (email, password) => {
         if (response.data.result) {
             await AsyncStorage.setItem("odooUrl", odooUrl);
             await AsyncStorage.setItem("session_id", response.data.result.session_id);
+            await AsyncStorage.setItem("user_name", response.data.result.name);
             return response.data.result;
         } else {
             throw new Error("Đăng nhập thất bại");
@@ -29,15 +30,14 @@ const fetchProducts = async () => {
     try {
         const odooUrl = await AsyncStorage.getItem("odooUrl");
         const session_id = await AsyncStorage.getItem("session_id");
-
         const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
             jsonrpc: "2.0",
             method: "call",
             params: {
                 model: "product.product",
                 method: "search_read",
-                args: [[]],
-                kwargs: { fields: ["id", "name", "list_price"] }
+                args: [[["available_in_pos", "=", true]]],
+                kwargs: { fields: ["id", "name", "list_price", "image_medium"] }
             }
         }, {
             headers: { "Cookie": `session_id=${session_id}` }

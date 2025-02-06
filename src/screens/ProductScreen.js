@@ -26,7 +26,7 @@ const ProductScreen = () => {
     return (
         <View style={styles.container}>
             <FlatList
-                data={products}
+                data={products.slice(0, 6)}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
                     <View style={styles.productItem}>
