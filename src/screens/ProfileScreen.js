@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearOrders } from '../database/database';
 
 const ProfileScreen = ({ setIsLoggedIn }) => {
     const [userName, setUserName] = useState(null);
@@ -36,6 +37,9 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
             <Text style={styles.title}>👤 Thông tin tài khoản</Text>
             <Text style={styles.sessionText}>{userName}</Text>
             <Button title="Đăng xuất" onPress={handleLogout} color="red" />
+            <View style={{ marginTop: 20 }}>
+                <Button title="Xóa toàn bộ đơn hàng" onPress={clearOrders} color="black" />
+            </View>
         </View>
     );
 };

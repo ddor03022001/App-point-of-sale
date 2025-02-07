@@ -49,4 +49,50 @@ const fetchProducts = async () => {
     }
 };
 
-export { loginOdoo, fetchProducts };
+const fetchPosConfigs = async () => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "pos.config",
+                method: "search_read",
+                args: [[]],
+                kwargs: { fields: ["id", "name"] }
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+
+        return response.data.result || [];
+    } catch (error) {
+        throw new Error("Không thể lấy dữ liệu pos: " + error.message);
+    }
+};
+
+const fetchPriceLists = async () => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "product.pricelisst",
+                method: "search_read",
+                args: [[]],
+                kwargs: { fields: ["id", "name", "item_ids"] }
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+
+        return response.data.result || [];
+    } catch (error) {
+        throw new Error("Không thể lấy dữ liệu pricelists: " + error.message);
+    }
+};
+
+export { loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists };

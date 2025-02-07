@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { createOrder } from '../database/database';
 
 const CartScreen = ({ cart, setCart }) => {
     // Hàm tăng số lượng
@@ -29,6 +30,14 @@ const CartScreen = ({ cart, setCart }) => {
     // Tính tổng giá trị giỏ hàng
     const getTotalPrice = () => {
         return cart.reduce((total, item) => total + item.list_price * item.quantity, 0);
+    };
+
+    // Hàm thanh toán
+    const handleCheckout = async () => {
+        await createOrder(getTotalPrice(), "Chuyển khoản"); // Tạo đơn hàng
+        Alert.alert("Thanh toán thành công", "Cảm ơn bạn đã mua hàng!", [
+            { text: "OK", onPress: () => setCart([]) } // Xóa giỏ hàng sau khi nhấn OK
+        ]);
     };
 
     return (
@@ -82,6 +91,12 @@ const CartScreen = ({ cart, setCart }) => {
             {cart.length > 0 && (
                 <View style={styles.totalContainer}>
                     <Text style={styles.totalText}>Tổng tiền: {getTotalPrice().toLocaleString()}đ</Text>
+                    <TouchableOpacity
+                        style={styles.checkoutButton}
+                        onPress={handleCheckout}
+                    >
+                        <Text style={styles.checkoutText}>Thanh toán</Text>
+                    </TouchableOpacity>
                 </View>
             )}
         </View>
@@ -164,4 +179,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#ff5733',
     },
+    checkoutButton: { backgroundColor: '#28a745', padding: 15, borderRadius: 10, marginTop: 10, width: '100%', alignItems: 'center' },
+    checkoutText: { fontSize: 18, color: '#fff', fontWeight: 'bold' },
 });

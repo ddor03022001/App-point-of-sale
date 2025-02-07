@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -6,7 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from './src/screens/HomeScreen';
 import CartScreen from './src/screens/CartScreen';
 import LoginScreen from './src/screens/LoginScreen';
-import ProfileScreen from './src/screens/ProfileScreen'; // Import ProfileScreen
+import ProfileScreen from './src/screens/ProfileScreen';
+import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
+import { createOrder, setupDatabase } from './src/database/database';
+import CheckoutScreen from './src/screens/CheckoutScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -19,6 +22,7 @@ const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
         if (route.name === 'Home') iconName = 'home-outline';
         else if (route.name === 'Cart') iconName = 'cart-outline';
         else if (route.name === 'Profile') iconName = 'person-outline';
+        else if (route.name === 'OrderHistory') iconName = 'time-outline';
         return <Ionicons name={iconName} size={size} color={color} />;
       },
       tabBarActiveTintColor: '#007AFF',
@@ -32,6 +36,9 @@ const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
     <Tab.Screen name="Cart">
       {(props) => <CartScreen {...props} cart={cart} setCart={setCart} />}
     </Tab.Screen>
+    <Tab.Screen name="OrderHistory">
+      {(props) => <OrderHistoryScreen {...props} />}
+    </Tab.Screen>
     <Tab.Screen name="Profile">
       {(props) => <ProfileScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
     </Tab.Screen>
@@ -41,6 +48,10 @@ const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
 export default function App() {
   const [cart, setCart] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setupDatabase(); // ✅ Tạo database khi app khởi chạy
+  }, []);
 
   return (
     <NavigationContainer>
