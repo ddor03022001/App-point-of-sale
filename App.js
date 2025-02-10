@@ -8,7 +8,7 @@ import CartScreen from './src/screens/CartScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
-import { createOrder, setupDatabase } from './src/database/database';
+import { setupDatabase } from './src/database/database';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 
 const Tab = createBottomTabNavigator();

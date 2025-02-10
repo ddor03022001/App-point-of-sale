@@ -80,7 +80,7 @@ const fetchPriceLists = async () => {
             jsonrpc: "2.0",
             method: "call",
             params: {
-                model: "product.pricelisst",
+                model: "product.pricelist",
                 method: "search_read",
                 args: [[]],
                 kwargs: { fields: ["id", "name", "item_ids"] }
