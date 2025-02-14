@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createOrder } from '../database/database';
-import { createSessionResponse } from '../api/odooApi';
+import { createSessionResponse, createPosOrder } from '../api/odooApi';
 
 const CartScreen = ({ cart, setCart }) => {
     // Hàm tăng số lượng
@@ -40,9 +40,8 @@ const CartScreen = ({ cart, setCart }) => {
     //         { text: "OK", onPress: () => setCart([]) } // Xóa giỏ hàng sau khi nhấn OK
     //     ]);
     // };
-
     const handleCheckout = async () => {
-        const response = await createSessionResponse(14);
+        const response = await createPosOrder();
         console.log(response);
     };
 

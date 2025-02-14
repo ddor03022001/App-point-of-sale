@@ -16,7 +16,7 @@ const LoginScreen = ({ setIsLoggedIn }) => {
             // Alert.alert("Đăng nhập thành công!", `User: ${result.username}`);
             setIsLoggedIn(true); // Chuyển đến màn hình chính
         } catch (error) {
-            Alert.alert("Đăng nhập thất bại", "Tài khoản hoặc mật khẩu không chính xác");
+            Alert.alert("Đăng nhập thất bại", error.message);
         } finally {
             setLoading(false); // Kết thúc loading sau khi xử lý xong
         }

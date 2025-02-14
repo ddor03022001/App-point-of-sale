@@ -50,6 +50,91 @@ const fetchProducts = async () => {
     }
 };
 
+const createPosOrder = async () => {
+    order = [
+        {
+            'data': {
+                'name': 'hello20',
+                'amount_paid': 21350,
+                'amount_total': 21350,
+                'amount_tax': 1017,
+                'amount_return': 0,
+                'lines': [
+                    [0, 0, {
+                        'qty': 0.61,
+                        'price_unit': 35000,
+                        'price_subtotal': 20333,
+                        'price_subtotal_incl': 21350,
+                        'discount': 0,
+                        'product_id': 138810,
+                        'tax_ids': [[6, false, [248]]],
+                        'pack_lot_ids': [],
+                        'note': '',
+                        'combo_item_ids': {},
+                        'pos_branch_id': 14,
+                        'voucher': {},
+                        'session_info': {
+                            'user': {
+                                'id': 1706,
+                                'name': 'dev - ITSG'
+                            },
+                            'pos': {
+                                'id': 13,
+                                'name': 'DannyGreen BioMarkt - Cityland, Quận 7'
+                            }
+                        },
+                        'state': 'Draft',
+                    }]
+                ],
+                'statement_ids': [[0, 0, {
+                    'name': '2025-02-14 05:01:39',
+                    'statement_id': 49402,
+                    'account_id': 8466,
+                    'journal_id': 333,
+                    'amount': 21350
+                }]],
+                'pos_session_id': 7931,
+                'pricelist_id': 402,
+                'partner_id': 11233, // customer
+                'user_id': 1426, // sale person
+                'sequence_number': 2,
+                'creation_date': '2025-02-14T05:01:39.863Z',
+                'fiscal_position_id': false,
+                'to_invoice': true,
+                'table_id': false,
+                'floor': false,
+                'floor_id': false,
+                'customer_count': 1,
+                'sale_journal': 316,
+                'lock': false,
+                'add_credit': false,
+                'location_id': 571,
+                'pos_branch_id': 14,
+                'session_info': { 'user': { 'id': 1706, 'name': 'dev - ITSG' }, 'pos': { 'id': 13, 'name': 'DannyGreen BioMarkt - Cityland, Quận 7' } }, 'currency_id': 23, 'notify_messages': {}, 'rating': '0', 'promotion_ids': []
+            }, 'to_invoice': false
+        }];
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "pos.order",
+                method: "create_from_ui",
+                args: [order],
+                kwargs: {}
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+
+        return response.data.result || [];
+    } catch (error) {
+        throw new Error("Không thể tạo đơn hàng: " + error.message);
+    }
+};
+
 const createSessionResponse = async () => {
     try {
         const odooUrl = await AsyncStorage.getItem("odooUrl");
@@ -161,4 +246,4 @@ const fetchPriceLists = async () => {
     }
 };
 
-export { loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse };
+export { loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse, createPosOrder };
