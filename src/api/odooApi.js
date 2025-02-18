@@ -54,7 +54,7 @@ const createPosOrder = async () => {
     order = [
         {
             'data': {
-                'name': 'hello20',
+                'name': 'hello1',
                 'amount_paid': 21350,
                 'amount_total': 21350,
                 'amount_tax': 1017,
@@ -93,7 +93,7 @@ const createPosOrder = async () => {
                     'journal_id': 333,
                     'amount': 21350
                 }]],
-                'pos_session_id': 7931,
+                'pos_session_id': 7952,
                 'pricelist_id': 402,
                 'partner_id': 11233, // customer
                 'user_id': 1426, // sale person

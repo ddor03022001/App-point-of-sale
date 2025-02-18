@@ -3,8 +3,11 @@ import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from
 import { Ionicons } from '@expo/vector-icons';
 import { createOrder } from '../database/database';
 import { createSessionResponse, createPosOrder } from '../api/odooApi';
+import { useNavigation } from '@react-navigation/native';
 
 const CartScreen = ({ cart, setCart }) => {
+
+    const navigation = useNavigation();
     // Hàm tăng số lượng
     const increaseQuantity = (id) => {
         const newCart = cart.map((item) =>
@@ -41,8 +44,7 @@ const CartScreen = ({ cart, setCart }) => {
     //     ]);
     // };
     const handleCheckout = async () => {
-        const response = await createPosOrder();
-        console.log(response);
+        navigation.navigate("Checkout", { cart });
     };
 
     return (
@@ -61,7 +63,7 @@ const CartScreen = ({ cart, setCart }) => {
                             <View style={styles.cartInfo}>
                                 <Text style={styles.cartName}>{item.name}</Text>
                                 <Text style={styles.cartPrice}>
-                                    {item.list_price.toLocaleString()}đ
+                                    {item.list_price.toLocaleString()} VND
                                 </Text>
                                 <View style={styles.quantityContainer}>
                                     <TouchableOpacity
@@ -95,7 +97,7 @@ const CartScreen = ({ cart, setCart }) => {
             {/* Tổng tiền */}
             {cart.length > 0 && (
                 <View style={styles.totalContainer}>
-                    <Text style={styles.totalText}>Tổng tiền: {getTotalPrice().toLocaleString()}đ</Text>
+                    <Text style={styles.totalText}>Tổng tiền: {getTotalPrice().toLocaleString()} VND</Text>
                     <TouchableOpacity
                         style={styles.checkoutButton}
                         onPress={handleCheckout}

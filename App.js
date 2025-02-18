@@ -61,9 +61,16 @@ export default function App() {
             {(props) => <LoginScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
           </Stack.Screen>
         ) : (
-          <Stack.Screen name="Main">
-            {(props) => <TabNavigator cart={cart} setCart={setCart} setIsLoggedIn={setIsLoggedIn} />}
-          </Stack.Screen>
+          <>
+            <Stack.Screen name="Main">
+              {() => <TabNavigator cart={cart} setCart={setCart} setIsLoggedIn={setIsLoggedIn} />}
+            </Stack.Screen>
+            <Stack.Screen
+              name="Checkout"
+              component={CheckoutScreen}
+              options={{ headerShown: true, title: "Thanh toán", headerLeft: () => null, }}
+            ></Stack.Screen>
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
