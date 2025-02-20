@@ -1,8 +1,10 @@
-import React, { useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from "@expo/vector-icons";
+import { fetchPartners } from '../api/odooApi';
 
-const customers = [
+const customer_lists = [
     { id: 1, name: "Nguyễn Văn A" },
     { id: 2, name: "Trần Thị B" },
     { id: 3, name: "Lê Văn C" },
@@ -14,10 +16,32 @@ const customers = [
 
 const CheckoutScreen = ({ navigation, route }) => {
     const { cart } = route.params;
-    const [paymentMethod, setPaymentMethod] = useState("Chuyển khoản");
+    const [customers, setCustomers] = useState([]);
+    const [paymentMethods, setPaymentMethods] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
     const [selectedCustomer, setSelectedCustomer] = useState(customers[0]);
     const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
     const [searchText, setSearchText] = useState("");
+
+    useEffect(() => {
+        const loadCustomers = async () => {
+            try {
+                const data = await fetchPartners();
+                setCustomers(data);
+                setSelectedCustomer(data[0]);
+                const payment_methods = await AsyncStorage.getItem('payment_methods');
+                setPaymentMethods(JSON.parse(payment_methods));
+                setPaymentMethod(JSON.parse(payment_methods)[0]);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadCustomers();
+    }, []);
 
     const totalAmount = cart.reduce((total, item) => total + item.list_price * item.quantity, 0).toLocaleString();
 
@@ -27,8 +51,10 @@ const CheckoutScreen = ({ navigation, route }) => {
     };
 
     const filteredCustomers = customers.filter((customer) =>
-        customer.name.toLowerCase().includes(searchText.toLowerCase())
+        customer.name.toLowerCase().includes(searchText.toLowerCase()) || customer.mobile.includes(searchText)
     ).slice(0, 5);
+
+    if (loading) return <ActivityIndicator size="large" />;
 
     return (
         <View style={styles.container}>
@@ -65,7 +91,9 @@ const CheckoutScreen = ({ navigation, route }) => {
             {/* Chọn khách hàng */}
             <Text style={styles.sectionTitle}>Khách hàng</Text>
             <TouchableOpacity style={styles.customerSelect} onPress={() => setCustomerModalVisible(true)}>
-                <Text style={styles.customerSelectText}>{selectedCustomer.name}</Text>
+                <Text style={styles.customerSelectText}>
+                    {selectedCustomer.name + " - " + selectedCustomer.mobile}
+                </Text>
                 <Ionicons name="chevron-down" size={20} color="black" />
             </TouchableOpacity>
 
@@ -91,7 +119,7 @@ const CheckoutScreen = ({ navigation, route }) => {
                                         setCustomerModalVisible(false);
                                     }}
                                 >
-                                    <Text style={styles.customerItemText}>{item.name}</Text>
+                                    <Text style={styles.customerItemText}>{item.name + " - " + item.mobile}</Text>
                                 </TouchableOpacity>
                             )}
                         />
@@ -106,20 +134,20 @@ const CheckoutScreen = ({ navigation, route }) => {
             <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
             <View style={styles.paymentMethods}>
                 <FlatList
-                    data={["Chuyển khoản", "Tiền mặt", "Ví điện tử", "Momo", "ZaloPay"]} // Bạn có thể thêm phương thức thanh toán tùy thích
-                    keyExtractor={(item) => item}
+                    data={paymentMethods} // Bạn có thể thêm phương thức thanh toán tùy thích
+                    keyExtractor={(item) => item.id}
                     horizontal={true} // Cuộn ngang
                     showsHorizontalScrollIndicator={false} // Ẩn thanh cuộn
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={[
                                 styles.paymentButton,
-                                paymentMethod === item && styles.paymentButtonSelected,
+                                paymentMethod.id === item.id && styles.paymentButtonSelected,
                             ]}
                             onPress={() => setPaymentMethod(item)}
                         >
                             <Text>
-                                {item}
+                                {item.name}
                             </Text>
                         </TouchableOpacity>
                     )}

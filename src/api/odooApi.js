@@ -50,6 +50,29 @@ const fetchProducts = async () => {
     }
 };
 
+const fetchPartners = async () => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "res.partner",
+                method: "search_read",
+                args: [[["customer", "=", true]]],
+                kwargs: { fields: ["id", "name", "mobile"] }
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+
+        return response.data.result || [];
+    } catch (error) {
+        throw new Error("Không thể lấy dữ liệu khách hàng: " + error.message);
+    }
+};
+
 const createPosOrder = async () => {
     order = [
         {
@@ -148,9 +171,9 @@ const createSessionResponse = async () => {
             method: "call",
             params: {
                 model: "pos.config",
-                method: "search",
-                args: [[["is_active", "=", true]]],  // Lấy POS đang hoạt động
-                kwargs: {},
+                method: "search_read",
+                args: [[["active", "=", true]]],  // Lấy POS đang hoạt động
+                kwargs: { fields: ["id", "name", "journal_ids", "pricelist_id"] },
             }
         }, {
             headers: { Cookie: `session_id=${session_id}` },
@@ -161,6 +184,30 @@ const createSessionResponse = async () => {
         }
 
         const config_id = posConfigResponse.data.result[0];
+        await AsyncStorage.setItem("pos_config", JSON.stringify(config_id));
+
+        // Lấy Payment Method ID
+        const paymentMethodResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "account.journal",
+                method: "search_read",
+                args: [[["id", "in", config_id.journal_ids]]],  // Lấy POS đang hoạt động
+                kwargs: { fields: ["id", "name"] },
+            }
+        }, {
+            headers: { Cookie: `session_id=${session_id}` },
+        });
+
+        if (!paymentMethodResponse.data.result) {
+            throw new Error("Không tìm thấy account journal nào!");
+        }
+        const payment_methods = paymentMethodResponse.data.result;
+        await AsyncStorage.setItem("payment_methods", JSON.stringify(payment_methods));
+
+        // Lấy Default Pricelist ID
+        await AsyncStorage.setItem("default_pricelist", JSON.stringify(default_pricelist));
 
         // Kiểm tra xem POS session đã tồn tại chưa
         const sessionCheckResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
@@ -169,7 +216,7 @@ const createSessionResponse = async () => {
             params: {
                 model: "pos.session",
                 method: "search",
-                args: [[["state", "=", "opened"], ["config_id", "=", config_id]]],
+                args: [[["state", "=", "opened"], ["config_id", "=", config_id.id]]],
                 kwargs: {},
             }
         }, {
@@ -177,6 +224,7 @@ const createSessionResponse = async () => {
         });
 
         if (sessionCheckResponse.data.result.length > 0) {
+            await AsyncStorage.setItem("pos_session", JSON.stringify(sessionCheckResponse.data.result[0]));
             return { message: "POS session đã tồn tại!", session_id: sessionCheckResponse.data.result[0] };
         }
 
@@ -187,13 +235,15 @@ const createSessionResponse = async () => {
             params: {
                 model: "pos.session",
                 method: "create",
-                args: [{ user_id: parsedUserId, config_id: config_id }],
+                args: [{ user_id: parsedUserId, config_id: config_id.id }],
                 kwargs: {},
             }
         }, {
             headers: { "Cookie": `session_id=${session_id}` }
         });
-
+        if (response.data.result) {
+            await AsyncStorage.setItem("pos_session", JSON.stringify(response.data.result));
+        }
         return response.data.result || [];
     } catch (error) {
         throw new Error("Không thể tạo session: " + error.message);
@@ -246,4 +296,4 @@ const fetchPriceLists = async () => {
     }
 };
 
-export { loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse, createPosOrder };
+export { loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse, createPosOrder, fetchPartners };

@@ -26,7 +26,7 @@ const CartScreen = ({ cart, setCart }) => {
         setCart(newCart);
     };
 
-    // Hàm xoá sản phẩm khỏi giỏ hàng
+    // Hàm xóa sản phẩm khỏi giỏ hàng
     const removeItem = (id) => {
         setCart(cart.filter((item) => item.id !== id));
     };
@@ -59,7 +59,7 @@ const CartScreen = ({ cart, setCart }) => {
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
                         <View style={styles.cartItem}>
-                            <Image source={{ uri: `data:image/png;base64,${item.image_medium}` }} style={styles.cartImage} />
+                            {/* <Image source={{ uri: `data:image/png;base64,${item.image_medium}` }} style={styles.cartImage} /> */}
                             <View style={styles.cartInfo}>
                                 <Text style={styles.cartName}>{item.name}</Text>
                                 <Text style={styles.cartPrice}>

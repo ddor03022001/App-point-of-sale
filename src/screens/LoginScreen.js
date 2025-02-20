@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Alert, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { TextInput, Button, Text, IconButton } from 'react-native-paper';
-import { loginOdoo } from '../api/odooApi';
+import { loginOdoo, createSessionResponse } from '../api/odooApi';
 
 const LoginScreen = ({ setIsLoggedIn }) => {
     const [email, setEmail] = useState('');
@@ -13,6 +13,7 @@ const LoginScreen = ({ setIsLoggedIn }) => {
         setLoading(true); // Bắt đầu loading
         try {
             await loginOdoo(email, password);
+            await createSessionResponse();
             // Alert.alert("Đăng nhập thành công!", `User: ${result.username}`);
             setIsLoggedIn(true); // Chuyển đến màn hình chính
         } catch (error) {
