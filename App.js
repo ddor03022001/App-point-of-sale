@@ -10,6 +10,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import { setupDatabase } from './src/database/database';
 import CheckoutScreen from './src/screens/CheckoutScreen';
+import OrderDetailScreen from './src/screens/OrderDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -68,7 +69,12 @@ export default function App() {
             <Stack.Screen
               name="Checkout"
               component={CheckoutScreen}
-              options={{ headerShown: true, title: "Thanh toán", headerLeft: () => null, }}
+              options={{ headerShown: true, title: "Thanh toán" }}
+            ></Stack.Screen>
+            <Stack.Screen
+              name="OrderDetail"
+              component={OrderDetailScreen}
+              options={{ headerShown: true, title: "Chi tiết đơn hàng" }}
             ></Stack.Screen>
           </>
         )}

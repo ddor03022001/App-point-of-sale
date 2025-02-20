@@ -7,6 +7,7 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
     const [userName, setUserName] = useState('null');
     const [posConfig, setPosConfig] = useState('null');
     const [priceList, setPriceList] = useState('null');
+    const [salePerson, setSalePerson] = useState('null');
 
     useEffect(() => {
         const getSetting = async () => {
@@ -14,6 +15,7 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                 const storedSessionId = await AsyncStorage.getItem('user_name');
                 const posConfigId = await AsyncStorage.getItem('pos_config');
                 const pricelist_id = await AsyncStorage.getItem('default_pricelist');
+                const saleperson_id = await AsyncStorage.getItem('default_saleperson');
                 if (storedSessionId !== null) {
                     setUserName(storedSessionId);
                 }
@@ -22,6 +24,9 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                 }
                 if (pricelist_id !== null) {
                     setPriceList(JSON.parse(pricelist_id)[1]);
+                }
+                if (saleperson_id !== null) {
+                    setSalePerson(JSON.parse(saleperson_id)[1]);
                 }
             } catch (error) {
                 console.error('Lỗi khi lấy dữ liệu setting:', error);
@@ -47,6 +52,7 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                 <Text style={styles.sessionText}>{userName}</Text>
                 <Text style={styles.sessionText}>{posConfig}</Text>
                 <Text style={styles.sessionText}>{priceList}</Text>
+                <Text style={styles.sessionText}>{salePerson}</Text>
             </View>
 
             <View style={styles.actionsContainer}>

@@ -3,6 +3,9 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, A
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from "@expo/vector-icons";
 import { fetchPartners } from '../api/odooApi';
+import { createOrder, createOrderLine } from '../database/database';
+import { createPosOrder } from '../api/odooApi';
+
 
 const customer_lists = [
     { id: 1, name: "Nguyễn Văn A" },
@@ -23,6 +26,7 @@ const CheckoutScreen = ({ navigation, route }) => {
     const [selectedCustomer, setSelectedCustomer] = useState(customers[0]);
     const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
     const [searchText, setSearchText] = useState("");
+    const [loadingCreatePosOrder, setLoadingCreatePosOrder] = useState(false);
 
     useEffect(() => {
         const loadCustomers = async () => {
@@ -45,26 +49,39 @@ const CheckoutScreen = ({ navigation, route }) => {
 
     const totalAmount = cart.reduce((total, item) => total + item.list_price * item.quantity, 0).toLocaleString();
 
-    const handleConfirmOrder = () => {
-        alert(`Đơn hàng đã được xác nhận!\nKhách hàng: ${selectedCustomer.name}\nPhương thức thanh toán: ${paymentMethod}`);
-        navigation.goBack();
+    // Hàm thanh toán
+    const handleConfirmOrder = async () => {
+        setLoadingCreatePosOrder(true);
+        try {
+            const selectedSaleperson = await AsyncStorage.getItem('default_saleperson');
+            const pricelist = await AsyncStorage.getItem('default_pricelist');
+            const order_id = await createOrder(totalAmount, paymentMethod, selectedCustomer, JSON.parse(selectedSaleperson), JSON.parse(pricelist));
+            for (const item of cart) {
+                await createOrderLine(order_id, item);
+            }
+            await createPosOrder(selectedCustomer, cart, order_id);
+            alert(`Đơn hàng được tạo thành công`);
+            navigation.goBack(); // ✅ Quay lại màn hình trước
+        } catch (error) {
+            alert("Đã xảy ra lỗi khi xử lý đơn hàng!");
+        } finally {
+            setLoadingCreatePosOrder(false); // Kết thúc loading sau khi xử lý xong
+        }
     };
 
+    // const handleConfirmOrder = () => {
+    //     alert(`Đơn hàng đã được xác nhận!\nKhách hàng: ${selectedCustomer.name}\nPhương thức thanh toán: ${paymentMethod}`);
+    //     navigation.goBack();
+    // };
+
     const filteredCustomers = customers.filter((customer) =>
-        customer.name.toLowerCase().includes(searchText.toLowerCase()) || customer.mobile.includes(searchText)
+        customer.name.toLowerCase().includes(searchText.toLowerCase()) || String(customer.mobile || "").includes(searchText)
     ).slice(0, 5);
 
     if (loading) return <ActivityIndicator size="large" />;
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={24} color="black" />
-                </TouchableOpacity>
-                <Text style={styles.title}>Xác nhận đơn hàng</Text>
-            </View>
-
             {/* Danh sách sản phẩm */}
             {cart.length > 0 ? (
                 <FlatList
@@ -157,9 +174,14 @@ const CheckoutScreen = ({ navigation, route }) => {
             {/* Tổng tiền + Nút xác nhận */}
             <View style={styles.summary}>
                 <Text style={styles.totalText}>Tổng tiền: {totalAmount} VND</Text>
-                <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmOrder}>
-                    <Text style={styles.confirmButtonText}>Xác nhận thanh toán</Text>
-                </TouchableOpacity>
+                {/* Hiển thị ActivityIndicator khi loading là true */}
+                {loadingCreatePosOrder ? (
+                    <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
+                ) : (
+                    <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmOrder}>
+                        <Text style={styles.confirmButtonText}>Xác nhận thanh toán</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );

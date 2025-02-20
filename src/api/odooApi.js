@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getOrderById } from '../database/database';
 
 const loginOdoo = async (email, password) => {
     try {
@@ -38,7 +39,7 @@ const fetchProducts = async () => {
                 model: "product.product",
                 method: "search_read",
                 args: [[["available_in_pos", "=", true]]],
-                kwargs: { fields: ["id", "name", "list_price", "image_medium"] }
+                kwargs: { fields: ["id", "name", "list_price", "image_medium", "taxes_id"] }
             }
         }, {
             headers: { "Cookie": `session_id=${session_id}` }
@@ -73,70 +74,87 @@ const fetchPartners = async () => {
     }
 };
 
-const createPosOrder = async () => {
-    order = [
-        {
-            'data': {
-                'name': 'hello1',
-                'amount_paid': 21350,
-                'amount_total': 21350,
-                'amount_tax': 1017,
-                'amount_return': 0,
-                'lines': [
-                    [0, 0, {
-                        'qty': 0.61,
-                        'price_unit': 35000,
-                        'price_subtotal': 20333,
-                        'price_subtotal_incl': 21350,
-                        'discount': 0,
-                        'product_id': 138810,
-                        'tax_ids': [[6, false, [248]]],
-                        'pack_lot_ids': [],
-                        'note': '',
-                        'combo_item_ids': {},
-                        'pos_branch_id': 14,
-                        'voucher': {},
-                        'session_info': {
-                            'user': {
-                                'id': 1706,
-                                'name': 'dev - ITSG'
-                            },
-                            'pos': {
-                                'id': 13,
-                                'name': 'DannyGreen BioMarkt - Cityland, Quận 7'
-                            }
-                        },
-                        'state': 'Draft',
-                    }]
-                ],
-                'statement_ids': [[0, 0, {
-                    'name': '2025-02-14 05:01:39',
-                    'statement_id': 49402,
-                    'account_id': 8466,
-                    'journal_id': 333,
-                    'amount': 21350
-                }]],
-                'pos_session_id': 7952,
-                'pricelist_id': 402,
-                'partner_id': 11233, // customer
-                'user_id': 1426, // sale person
-                'sequence_number': 2,
-                'creation_date': '2025-02-14T05:01:39.863Z',
-                'fiscal_position_id': false,
-                'to_invoice': true,
-                'table_id': false,
-                'floor': false,
-                'floor_id': false,
-                'customer_count': 1,
-                'sale_journal': 316,
-                'lock': false,
-                'add_credit': false,
-                'location_id': 571,
-                'pos_branch_id': 14,
-                'session_info': { 'user': { 'id': 1706, 'name': 'dev - ITSG' }, 'pos': { 'id': 13, 'name': 'DannyGreen BioMarkt - Cityland, Quận 7' } }, 'currency_id': 23, 'notify_messages': {}, 'rating': '0', 'promotion_ids': []
-            }, 'to_invoice': false
-        }];
+const createPosOrder = async (customer, cart, orderId) => {
     try {
+        const pos_branch_id = await AsyncStorage.getItem("pos_branch");
+        const pos_config = await AsyncStorage.getItem("pos_config");
+        const user_id = await AsyncStorage.getItem("user_id");
+        const user_name = await AsyncStorage.getItem("user_name");
+        const pos_session = await AsyncStorage.getItem("pos_session");
+        const default_pricelist = await AsyncStorage.getItem("default_pricelist");
+        const default_saleperson = await AsyncStorage.getItem("default_saleperson");
+        const orderData = await getOrderById(orderId);
+
+        // Tạo danh sách `lines` từ `cart`
+        const lines = cart.map(item => [
+            0, 0, {
+                'qty': item.quantity,
+                'price_unit': item.list_price,
+                'price_subtotal': item.quantity * item.list_price,
+                'price_subtotal_incl': item.quantity * item.list_price, // Giả sử thuế 10%
+                'discount': 0,
+                'product_id': item.id,
+                'tax_ids': [[6, false, []]],
+                'pack_lot_ids': [],
+                'note': '',
+                'combo_item_ids': {},
+                'pos_branch_id': JSON.parse(pos_branch_id)[0],
+                'voucher': {},
+                'session_info': {
+                    'user': {
+                        'id': JSON.parse(user_id),
+                        'name': user_name
+                    },
+                    'pos': {
+                        'id': JSON.parse(pos_config).id,
+                        'name': JSON.parse(pos_config).name
+                    }
+                },
+                'state': 'Draft',
+            }
+        ]);
+
+        // Tính tổng tiền hàng
+        const amount_total = lines.reduce((sum, line) => sum + line[2].price_subtotal_incl, 0);
+        const amount_paid = amount_total;
+        const amount_tax = amount_total;
+
+        const order = [
+            {
+                'data': {
+                    'name': 'POS_ORDER_1',
+                    'amount_paid': amount_paid,
+                    'amount_total': amount_total,
+                    'amount_tax': amount_tax,
+                    'amount_return': 0,
+                    'lines': lines,
+                    'statement_ids': [[0, 0, {
+                        'name': orderData.created_at,
+                        'statement_id': 49402,
+                        'account_id': 8466,
+                        'journal_id': 333,
+                        'amount': amount_paid
+                    }]],
+                    'pos_session_id': JSON.parse(pos_session),
+                    'pricelist_id': JSON.parse(default_pricelist)[0],
+                    'partner_id': customer.id, // customer
+                    'user_id': JSON.parse(default_saleperson)[0], // sale person
+                    'sequence_number': 2,
+                    'creation_date': orderData.created_at.replace(" ", "T") + ".863Z",
+                    'fiscal_position_id': false,
+                    'to_invoice': true,
+                    'table_id': false,
+                    'floor': false,
+                    'floor_id': false,
+                    'customer_count': 1,
+                    'sale_journal': 316,
+                    'lock': false,
+                    'add_credit': false,
+                    'location_id': 571,
+                    'pos_branch_id': JSON.parse(pos_branch_id)[0],
+                    'session_info': { 'user': { 'id': JSON.parse(user_id), 'name': user_name }, 'pos': { 'id': JSON.parse(pos_config).id, 'name': JSON.parse(pos_config).name } }, 'currency_id': 23, 'notify_messages': {}, 'rating': '0', 'promotion_ids': []
+                }, 'to_invoice': false
+            }];
         const odooUrl = await AsyncStorage.getItem("odooUrl");
         const session_id = await AsyncStorage.getItem("session_id");
         const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
@@ -151,7 +169,6 @@ const createPosOrder = async () => {
         }, {
             headers: { "Cookie": `session_id=${session_id}` }
         });
-
         return response.data.result || [];
     } catch (error) {
         throw new Error("Không thể tạo đơn hàng: " + error.message);
@@ -173,7 +190,7 @@ const createSessionResponse = async () => {
                 model: "pos.config",
                 method: "search_read",
                 args: [[["active", "=", true]]],  // Lấy POS đang hoạt động
-                kwargs: { fields: ["id", "name", "journal_ids", "pricelist_id"] },
+                kwargs: { fields: ["id", "name", "journal_ids", "pricelist_id", "customer_default_id", "pos_branch_id", "default_seller_id"] },
             }
         }, {
             headers: { Cookie: `session_id=${session_id}` },
@@ -185,6 +202,7 @@ const createSessionResponse = async () => {
 
         const config_id = posConfigResponse.data.result[0];
         await AsyncStorage.setItem("pos_config", JSON.stringify(config_id));
+        await AsyncStorage.setItem("pos_branch", JSON.stringify(config_id.pos_branch_id));
 
         // Lấy Payment Method ID
         const paymentMethodResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
@@ -207,7 +225,10 @@ const createSessionResponse = async () => {
         await AsyncStorage.setItem("payment_methods", JSON.stringify(payment_methods));
 
         // Lấy Default Pricelist ID
-        await AsyncStorage.setItem("default_pricelist", JSON.stringify(default_pricelist));
+        await AsyncStorage.setItem("default_pricelist", JSON.stringify(config_id.pricelist_id));
+
+        // Lấy Default saleperson ID
+        await AsyncStorage.setItem("default_saleperson", JSON.stringify(config_id.default_seller_id));
 
         // Kiểm tra xem POS session đã tồn tại chưa
         const sessionCheckResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {

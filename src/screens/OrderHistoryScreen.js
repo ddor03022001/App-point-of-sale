@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getOrders } from '../database/database';
+import { useNavigation } from '@react-navigation/native';
 
 const OrderHistoryScreen = () => {
     const [orders, setOrders] = useState([]);
@@ -10,6 +11,8 @@ const OrderHistoryScreen = () => {
         const orderList = await getOrders(); // Lấy danh sách đơn hàng
         setOrders(orderList);
     };
+
+    const navigation = useNavigation();
 
     useFocusEffect(
         useCallback(() => {
@@ -22,14 +25,18 @@ const OrderHistoryScreen = () => {
             <Text style={styles.title}>Lịch Sử Mua Hàng</Text>
             <FlatList
                 data={orders}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <View style={styles.orderItem}>
-                        <Text>🛒 Đơn hàng #{item.id}</Text>
-                        <Text>💰 Tổng tiền: {item.total_price} VND</Text>
-                        <Text>🧾 Thanh toán: {item.payment_method}</Text>
-                        <Text>📅 Ngày mua: {item.created_at}</Text>
-                    </View>
+                    <TouchableOpacity onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
+                        <View style={styles.orderItem}>
+                            <Text>🛒 Đơn hàng #{item.id}</Text>
+                            <Text>💰 Tổng tiền: {item.amount_total} VND</Text>
+                            <Text>🤦‍♂️ Người bán: {item.saleperson_name}</Text>
+                            <Text>🤦 Người mua: {item.customer_name}</Text>
+                            <Text>🧾 Thanh toán: {item.payment_method_name}</Text>
+                            <Text>📅 Ngày mua: {item.created_at}</Text>
+                        </View>
+                    </TouchableOpacity>
                 )}
             />
         </View>
