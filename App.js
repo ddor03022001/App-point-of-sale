@@ -51,8 +51,16 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    setupDatabase(); // ✅ Tạo database khi app khởi chạy
-  }, []);
+    const initDatabase = async () => {
+      try {
+        await setupDatabase();
+        console.log('✅ Database đã sẵn sàng!');
+      } catch (error) {
+        console.error('❌ Lỗi khi tạo database:', error);
+      }
+    };
+    initDatabase();
+  }, [])
 
   return (
     <NavigationContainer>

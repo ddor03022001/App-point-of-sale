@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, Button, NativeModules } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Image, Button } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { getOrderById, getOrderLinesByOrderId } from '../database/database';
-
-const { SunmiPrinter } = NativeModules;
+import * as Print from 'expo-print';
 
 const OrderDetailScreen = () => {
     const route = useRoute();
@@ -23,44 +22,40 @@ const OrderDetailScreen = () => {
     }, [orderId]);
 
     // Hàm in hóa đơn
-    const printReceipt = () => {
+    const printReceipt = async () => {
+        const htmlContent = `
+        <html>
+            <head>
+                <style>
+                    body {
+                        width: 100%;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        font-family: Arial, sans-serif;
+                        padding: 5px;
+                    }
+                    h1 { text-align: center; }
+                    p { font-size: 16px; line-height: 1.5; }
+                    hr { margin: 20px 0; }
+                </style>
+            </head>
+            <body>
+                <h1>Đơn hàng #${order.id}</h1>
+                <p><strong>Tổng tiền:</strong> ${order.amount_total} VND</p>
+                <p><strong>Người bán:</strong> ${order.saleperson_name}</p>
+                <p><strong>Người mua:</strong> ${order.customer_name}</p>
+                <p><strong>Thanh toán:</strong> ${order.payment_method_name}</p>
+                <p><strong>Ngày mua:</strong> ${order.created_at}</p>
+                <hr>
+                <p>Cảm ơn quý khách!</p>
+            </body>
+        </html>
+    `;
+
         try {
-            console.log(SunmiPrinter);
-            SunmiPrinter.initPrinter(); // Khởi động máy in
-
-            SunmiPrinter.setAlignment(1); // Căn giữa tiêu đề
-            SunmiPrinter.printText("=== HÓA ĐƠN THANH TOÁN ===\n", 24, true);
-            SunmiPrinter.printText("============================\n", 20);
-
-            // In thông tin đơn hàng
-            SunmiPrinter.setAlignment(0); // Căn trái
-            SunmiPrinter.printText(`📦 Mã đơn hàng: #${order.id}\n`, 22);
-            SunmiPrinter.printText(`💰 Tổng tiền: ${order.amount_total} VND\n`, 22);
-            SunmiPrinter.printText(`🤦 Người bán: ${order.saleperson_name}\n`, 20);
-            SunmiPrinter.printText(`🤦‍♂️ Người mua: ${order.customer_name}\n`, 20);
-            SunmiPrinter.printText(`🧾 Thanh toán: ${order.payment_method_name}\n`, 20);
-            SunmiPrinter.printText(`📅 Ngày: ${order.created_at}\n`, 20);
-            SunmiPrinter.printText("============================\n", 20);
-
-            // In sản phẩm trong đơn hàng
-            orderLines.forEach(item => {
-                SunmiPrinter.printText(`${item.product_name} x${item.quantity}\n`, 22);
-                SunmiPrinter.printText(`💲 Giá: ${item.price} VND\n`, 20);
-                SunmiPrinter.printText("----------------------------\n", 20);
-            });
-
-            // Tổng tiền
-            SunmiPrinter.setAlignment(2); // Căn phải
-            SunmiPrinter.printText(`💵 Tổng: ${order.amount_total} VND\n`, 24, true);
-            SunmiPrinter.printText("============================\n", 20);
-
-            SunmiPrinter.autoOutPaper(); // Đẩy giấy ra
-            SunmiPrinter.cutPaper(); // Cắt giấy (nếu máy in hỗ trợ)
-
-            alert("✅ In thành công", "Hóa đơn đã được in.");
+            await Print.printAsync({ html: htmlContent });
         } catch (error) {
             console.error("Lỗi in hóa đơn:", error);
-            alert("❌ Lỗi in", "Không thể in hóa đơn.");
         }
     };
 

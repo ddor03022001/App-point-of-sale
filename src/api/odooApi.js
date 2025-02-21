@@ -122,7 +122,7 @@ const createPosOrder = async (customer, cart, orderId) => {
         const order = [
             {
                 'data': {
-                    'name': 'POS_ORDER_1',
+                    'name': 'POS_ORDER_' + orderId.id,
                     'amount_paid': amount_paid,
                     'amount_total': amount_total,
                     'amount_tax': amount_tax,
