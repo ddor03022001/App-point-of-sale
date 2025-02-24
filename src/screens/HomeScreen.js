@@ -3,12 +3,6 @@ import { View, FlatList, TextInput, Text, StyleSheet, ActivityIndicator } from '
 import ProductItem from '../components/ProductItem';
 import { fetchProducts } from '../api/odooApi';
 
-const productList = [
-    { id: '1', name: 'Dưa lê hồng kim', price: 100000, image: 'https://via.placeholder.com/100' },
-    { id: '2', name: 'Dưa lê bạch kim', price: 200000, image: 'https://via.placeholder.com/100' },
-    { id: '3', name: 'Dưa lưới ngọc bích', price: 150000, image: 'https://via.placeholder.com/100' },
-    { id: '4', name: 'Dưa lưới hằng nga', price: 300000, image: 'https://via.placeholder.com/100' },
-];
 
 const HomeScreen = ({ cart, setCart }) => {
     const [searchQuery, setSearchQuery] = useState('');

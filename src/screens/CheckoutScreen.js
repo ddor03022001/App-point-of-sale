@@ -1,32 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator, ScrollView } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from "@expo/vector-icons";
 import { fetchPartners } from '../api/odooApi';
 import { createOrder, createOrderLine } from '../database/database';
 import { createPosOrder } from '../api/odooApi';
+import { getValuePricelist } from "../method/methodPricelist";
 
-
-const customer_lists = [
-    { id: 1, name: "Nguyễn Văn A" },
-    { id: 2, name: "Trần Thị B" },
-    { id: 3, name: "Lê Văn C" },
-    { id: 4, name: "Phạm Văn D" },
-    { id: 5, name: "Phạm Văn E" },
-    { id: 6, name: "Phạm Văn F" },
-    { id: 7, name: "Phạm Văn G" },
-];
 
 const CheckoutScreen = ({ navigation, route }) => {
-    const { cart } = route.params;
+    const defaultCart = route.params.cart;
+    const [cart, setCart] = useState(defaultCart);
     const [customers, setCustomers] = useState([]);
     const [paymentMethods, setPaymentMethods] = useState([]);
     const [loading, setLoading] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
-    const [selectedCustomer, setSelectedCustomer] = useState(customers[0]);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [loadingCreatePosOrder, setLoadingCreatePosOrder] = useState(false);
+    const [priceLists, setPriceLists] = useState([]);
+    const [selectedPriceList, setSelectedPriceList] = useState(null);
+    const [isPriceListModalVisible, setPriceListModalVisible] = useState(false);
 
     useEffect(() => {
         const loadCustomers = async () => {
@@ -37,6 +32,22 @@ const CheckoutScreen = ({ navigation, route }) => {
                 const payment_methods = await AsyncStorage.getItem('payment_methods');
                 setPaymentMethods(JSON.parse(payment_methods));
                 setPaymentMethod(JSON.parse(payment_methods)[0]);
+                const pricelists = await AsyncStorage.getItem('pricelists');
+                setPriceLists(JSON.parse(pricelists));
+                const default_customer = await AsyncStorage.getItem('default_customer');
+                const data_customer = {
+                    id: JSON.parse(default_customer)[0],
+                    name: JSON.parse(default_customer)[1],
+                    mobile: null,
+                }
+                setSelectedCustomer(data_customer);
+                const default_pricelist = await AsyncStorage.getItem('default_pricelist');
+                const data_pricelist = {
+                    id: JSON.parse(default_pricelist)[0],
+                    name: JSON.parse(default_pricelist)[1],
+                }
+                setSelectedPriceList(data_pricelist);
+                setValuePricelist(data_pricelist);
             } catch (error) {
                 console.error(error);
             } finally {
@@ -46,6 +57,21 @@ const CheckoutScreen = ({ navigation, route }) => {
 
         loadCustomers();
     }, []);
+
+    const setValuePricelist = async (pricelist) => {
+        try {
+            const new_cart = defaultCart.map(async (item) => {
+                const updatedItem = { ...item };
+                updatedItem.list_price = await getValuePricelist(pricelist, item, item.quantity);
+                return updatedItem;
+            });
+
+            const updatedCart = await Promise.all(new_cart);
+            setCart(updatedCart);
+        } catch (error) {
+            alert("Đã xảy ra lỗi khi set pricelist!");
+        }
+    };
 
     const totalAmount = cart.reduce((total, item) => total + item.list_price * item.quantity, 0).toLocaleString();
 
@@ -81,14 +107,12 @@ const CheckoutScreen = ({ navigation, route }) => {
     if (loading) return <ActivityIndicator size="large" />;
 
     return (
-        <View style={styles.container}>
-            {/* Danh sách sản phẩm */}
-            {cart.length > 0 ? (
-                <FlatList
-                    data={cart}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <View style={styles.item}>
+        <ScrollView>
+            <View style={styles.container}>
+                {/* Danh sách sản phẩm */}
+                {cart.length > 0 ? (
+                    cart.map((item) => (
+                        <View key={item.id} style={styles.item}>
                             <View style={styles.itemColumn}>
                                 <Text style={styles.itemText}>{item.name}</Text>
                             </View>
@@ -99,91 +123,133 @@ const CheckoutScreen = ({ navigation, route }) => {
                                 <Text style={styles.itemPrice}>{(item.list_price * item.quantity).toLocaleString()} VND</Text>
                             </View>
                         </View>
-                    )}
-                />
-            ) : (
-                <Text style={styles.emptyText}>Giỏ hàng trống</Text>
-            )}
+                    ))
 
-            {/* Chọn khách hàng */}
-            <Text style={styles.sectionTitle}>Khách hàng</Text>
-            <TouchableOpacity style={styles.customerSelect} onPress={() => setCustomerModalVisible(true)}>
-                <Text style={styles.customerSelectText}>
-                    {selectedCustomer.name + " - " + selectedCustomer.mobile}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color="black" />
-            </TouchableOpacity>
-
-            {/* Modal chọn khách hàng */}
-            <Modal visible={isCustomerModalVisible} animationType="slide" transparent={true}>
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Chọn khách hàng</Text>
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Tìm kiếm khách hàng..."
-                            value={searchText}
-                            onChangeText={setSearchText}
-                        />
-                        <FlatList
-                            data={filteredCustomers}
-                            keyExtractor={(item) => item.id.toString()}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={styles.customerItem}
-                                    onPress={() => {
-                                        setSelectedCustomer(item);
-                                        setCustomerModalVisible(false);
-                                    }}
-                                >
-                                    <Text style={styles.customerItemText}>{item.name + " - " + item.mobile}</Text>
-                                </TouchableOpacity>
-                            )}
-                        />
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setCustomerModalVisible(false)}>
-                            <Text style={styles.closeButtonText}>Đóng</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Chọn phương thức thanh toán */}
-            <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
-            <View style={styles.paymentMethods}>
-                <FlatList
-                    data={paymentMethods} // Bạn có thể thêm phương thức thanh toán tùy thích
-                    keyExtractor={(item) => item.id}
-                    horizontal={true} // Cuộn ngang
-                    showsHorizontalScrollIndicator={false} // Ẩn thanh cuộn
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.paymentButton,
-                                paymentMethod.id === item.id && styles.paymentButtonSelected,
-                            ]}
-                            onPress={() => setPaymentMethod(item)}
-                        >
-                            <Text>
-                                {item.name}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                />
-            </View>
-
-            {/* Tổng tiền + Nút xác nhận */}
-            <View style={styles.summary}>
-                <Text style={styles.totalText}>Tổng tiền: {totalAmount} VND</Text>
-                {/* Hiển thị ActivityIndicator khi loading là true */}
-                {loadingCreatePosOrder ? (
-                    <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
                 ) : (
-                    <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmOrder}>
-                        <Text style={styles.confirmButtonText}>Xác nhận thanh toán</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.emptyText}>Giỏ hàng trống</Text>
                 )}
+
+                {/* Chọn Bảng giá */}
+                <Text style={styles.sectionTitle}>Bảng giá</Text>
+                <TouchableOpacity style={styles.customerSelect} onPress={() => setPriceListModalVisible(true)}>
+                    <Text style={styles.customerSelectText}>
+                        {selectedPriceList.name}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="black" />
+                </TouchableOpacity>
+
+                {/* Modal chọn Bảng giá */}
+                <Modal visible={isPriceListModalVisible} animationType="slide" transparent={true}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Chọn Bảng giá</Text>
+                            <FlatList
+                                data={priceLists}
+                                keyExtractor={(item) => item.id.toString()}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.customerItem}
+                                        onPress={() => {
+                                            setValuePricelist(item);
+                                            setSelectedPriceList(item);
+                                            setPriceListModalVisible(false);
+                                        }}
+                                    >
+                                        <Text style={styles.customerItemText}>{item.name}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setPriceListModalVisible(false)}>
+                                <Text style={styles.closeButtonText}>Đóng</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Chọn khách hàng */}
+                <Text style={styles.sectionTitle}>Khách hàng</Text>
+                <TouchableOpacity style={styles.customerSelect} onPress={() => setCustomerModalVisible(true)}>
+                    <Text style={styles.customerSelectText}>
+                        {selectedCustomer.mobile ? (
+                            selectedCustomer.name + " - " + selectedCustomer.mobile
+                        ) : (
+                            selectedCustomer.name
+                        )}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="black" />
+                </TouchableOpacity>
+
+                {/* Modal chọn khách hàng */}
+                <Modal visible={isCustomerModalVisible} animationType="slide" transparent={true}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Chọn khách hàng</Text>
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Tìm kiếm khách hàng..."
+                                value={searchText}
+                                onChangeText={setSearchText}
+                            />
+                            <FlatList
+                                data={filteredCustomers}
+                                keyExtractor={(item) => item.id.toString()}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.customerItem}
+                                        onPress={() => {
+                                            setSelectedCustomer(item);
+                                            setCustomerModalVisible(false);
+                                        }}
+                                    >
+                                        <Text style={styles.customerItemText}>{item.name + " - " + item.mobile}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setCustomerModalVisible(false)}>
+                                <Text style={styles.closeButtonText}>Đóng</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Chọn phương thức thanh toán */}
+                <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
+                <View style={styles.paymentMethods}>
+                    <FlatList
+                        data={paymentMethods} // Bạn có thể thêm phương thức thanh toán tùy thích
+                        keyExtractor={(item) => item.id}
+                        horizontal={true} // Cuộn ngang
+                        showsHorizontalScrollIndicator={false} // Ẩn thanh cuộn
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={[
+                                    styles.paymentButton,
+                                    paymentMethod.id === item.id && styles.paymentButtonSelected,
+                                ]}
+                                onPress={() => setPaymentMethod(item)}
+                            >
+                                <Text>
+                                    {item.name}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+                </View>
+
+                {/* Tổng tiền + Nút xác nhận */}
+                <View style={styles.summary}>
+                    <Text style={styles.totalText}>Tổng tiền: {totalAmount} VND</Text>
+                    {/* Hiển thị ActivityIndicator khi loading là true */}
+                    {loadingCreatePosOrder ? (
+                        <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
+                    ) : (
+                        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmOrder}>
+                            <Text style={styles.confirmButtonText}>Xác nhận thanh toán</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
-        </View>
+        </ScrollView>
     );
 };
 

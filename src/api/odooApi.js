@@ -39,7 +39,7 @@ const fetchProducts = async () => {
                 model: "product.product",
                 method: "search_read",
                 args: [[["available_in_pos", "=", true]]],
-                kwargs: { fields: ["id", "name", "list_price", "image_medium", "taxes_id"] }
+                kwargs: { fields: ["id", "name", "list_price", "image_medium", "taxes_id", "categ_id", "pos_categ_id", "product_tmpl_id"] }
             }
         }, {
             headers: { "Cookie": `session_id=${session_id}` }
@@ -190,7 +190,7 @@ const createSessionResponse = async () => {
                 model: "pos.config",
                 method: "search_read",
                 args: [[["active", "=", true]]],  // Lấy POS đang hoạt động
-                kwargs: { fields: ["id", "name", "journal_ids", "pricelist_id", "customer_default_id", "pos_branch_id", "default_seller_id"] },
+                kwargs: { fields: ["id", "name", "journal_ids", "pricelist_id", "customer_default_id", "pos_branch_id", "default_seller_id", "available_pricelist_ids"] },
             }
         }, {
             headers: { Cookie: `session_id=${session_id}` },
@@ -224,11 +224,34 @@ const createSessionResponse = async () => {
         const payment_methods = paymentMethodResponse.data.result;
         await AsyncStorage.setItem("payment_methods", JSON.stringify(payment_methods));
 
+        // Lấy Pricelist ID
+        const priceListResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "product.pricelist",
+                method: "search_read",
+                args: [[["id", "in", config_id.available_pricelist_ids]]],  // Lấy POS đang hoạt động
+                kwargs: { fields: ["id", "name"] },
+            }
+        }, {
+            headers: { Cookie: `session_id=${session_id}` },
+        });
+
+        if (!priceListResponse.data.result) {
+            throw new Error("Không tìm thấy pricelist nào!");
+        }
+        const pricelists = priceListResponse.data.result;
+        await AsyncStorage.setItem("pricelists", JSON.stringify(pricelists));
+
         // Lấy Default Pricelist ID
         await AsyncStorage.setItem("default_pricelist", JSON.stringify(config_id.pricelist_id));
 
         // Lấy Default saleperson ID
         await AsyncStorage.setItem("default_saleperson", JSON.stringify(config_id.default_seller_id));
+
+        // Lấy Default Customer ID
+        await AsyncStorage.setItem("default_customer", JSON.stringify(config_id.customer_default_id));
 
         // Kiểm tra xem POS session đã tồn tại chưa
         const sessionCheckResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
@@ -317,4 +340,27 @@ const fetchPriceLists = async () => {
     }
 };
 
-export { loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse, createPosOrder, fetchPartners };
+const getPricelistItems = async (pricelist_id) => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "product.pricelist.item",
+                method: "search_read",
+                args: [[["pricelist_id", "=", pricelist_id.id]]],
+                kwargs: { fields: ["id", "name", "min_quantity", "date_start", "date_end", "applied_on", "compute_price", "fixed_price", "percent_price", "categ_id", "product_tmpl_id", "product_id"] }
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+
+        return response.data.result || [];
+    } catch (error) {
+        throw new Error("Không thể lấy dữ liệu pricelistItems: " + error.message);
+    }
+};
+
+export { loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse, createPosOrder, fetchPartners, getPricelistItems };
