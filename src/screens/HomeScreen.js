@@ -57,7 +57,7 @@ const HomeScreen = ({ cart, setCart }) => {
                 keyExtractor={(item) => item.id}
                 numColumns={2}
                 renderItem={({ item }) => (
-                    <ProductItem item={item} onPress={() => addToCart(item)} />
+                    <ProductItem item={item} onPress={() => addToCart(item)} cart={cart} />
                 )}
             />
         </View>
