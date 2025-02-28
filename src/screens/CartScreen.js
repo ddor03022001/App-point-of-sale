@@ -44,7 +44,7 @@ const CartScreen = ({ cart, setCart }) => {
     //     ]);
     // };
     const handleCheckout = async () => {
-        navigation.navigate("Checkout", { cart });
+        navigation.navigate("Checkout");
     };
 
     return (

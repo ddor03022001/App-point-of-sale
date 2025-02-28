@@ -30,6 +30,7 @@ const LoginScreen = ({ setIsLoggedIn }) => {
                 label="Email"
                 mode="outlined"
                 value={email}
+                activeOutlineColor='#28a745'
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 style={styles.input}
@@ -38,6 +39,7 @@ const LoginScreen = ({ setIsLoggedIn }) => {
                 label="Mật khẩu"
                 mode="outlined"
                 value={password}
+                activeOutlineColor='#28a745'
                 onChangeText={setPassword}
                 secureTextEntry={secureText}
                 right={
@@ -66,7 +68,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#f4f4f4',
+        backgroundColor: 'white',
     },
     logo: {
         width: 150,
@@ -85,6 +87,7 @@ const styles = StyleSheet.create({
     button: {
         width: '100%',
         paddingVertical: 8,
+        backgroundColor: '#28a745',
     },
 });
 

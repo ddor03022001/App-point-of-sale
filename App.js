@@ -76,9 +76,11 @@ export default function App() {
             </Stack.Screen>
             <Stack.Screen
               name="Checkout"
-              component={CheckoutScreen}
+              // component={CheckoutScreen}
               options={{ headerShown: true, title: "Thanh toán" }}
-            ></Stack.Screen>
+            >
+              {(props) => <CheckoutScreen {...props} defaultCart={cart} defaultSetCart={setCart} />}
+            </Stack.Screen>
             <Stack.Screen
               name="OrderDetail"
               component={OrderDetailScreen}
