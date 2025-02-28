@@ -77,30 +77,31 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
     const totalAmount = cart.reduce((total, item) => total + item.list_price * item.quantity, 0).toLocaleString();
 
     // Hàm thanh toán
-    // const handleConfirmOrder = async () => {
-    //     setLoadingCreatePosOrder(true);
-    //     try {
-    //         const selectedSaleperson = await AsyncStorage.getItem('default_saleperson');
-    //         const pricelist = await AsyncStorage.getItem('default_pricelist');
-    //         const order_id = await createOrder(totalAmount, paymentMethod, selectedCustomer, JSON.parse(selectedSaleperson), JSON.parse(pricelist));
-    //         for (const item of cart) {
-    //             await createOrderLine(order_id, item);
-    //         }
-    //         await createPosOrder(selectedCustomer, cart, order_id);
-    //         alert(`Đơn hàng được tạo thành công`);
-    //         navigation.goBack(); // ✅ Quay lại màn hình trước
-    //     } catch (error) {
-    //         alert("Đã xảy ra lỗi khi xử lý đơn hàng!");
-    //     } finally {
-    //         setLoadingCreatePosOrder(false); // Kết thúc loading sau khi xử lý xong
-    //     }
-    // };
-
-    const handleConfirmOrder = () => {
-        alert(`Đơn hàng đã được xác nhận!\nKhách hàng: ${selectedCustomer.name}\nPhương thức thanh toán: ${paymentMethod}`);
-        defaultSetCart([]);
-        navigation.goBack();
+    const handleConfirmOrder = async () => {
+        setLoadingCreatePosOrder(true);
+        try {
+            const selectedSaleperson = await AsyncStorage.getItem('default_saleperson');
+            const pricelist = await AsyncStorage.getItem('default_pricelist');
+            const order_id = await createOrder(totalAmount, paymentMethod, selectedCustomer, JSON.parse(selectedSaleperson), JSON.parse(pricelist));
+            for (const item of cart) {
+                await createOrderLine(order_id, item);
+            }
+            await createPosOrder(selectedCustomer, cart, order_id, paymentMethod);
+            alert(`Đơn hàng được tạo thành công`);
+            defaultSetCart([]);
+            navigation.goBack(); // ✅ Quay lại màn hình trước
+        } catch (error) {
+            alert("Đã xảy ra lỗi khi xử lý đơn hàng!");
+        } finally {
+            setLoadingCreatePosOrder(false); // Kết thúc loading sau khi xử lý xong
+        }
     };
+
+    // const handleConfirmOrder = () => {
+    //     alert(`Đơn hàng đã được xác nhận!\nKhách hàng: ${selectedCustomer.name}\nPhương thức thanh toán: ${paymentMethod}`);
+    //     defaultSetCart([]);
+    //     navigation.goBack();
+    // };
 
     const filteredCustomers = customers.filter((customer) =>
         customer.name.toLowerCase().includes(searchText.toLowerCase()) || String(customer.mobile || "").includes(searchText)

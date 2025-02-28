@@ -74,7 +74,7 @@ const fetchPartners = async () => {
     }
 };
 
-const createPosOrder = async (customer, cart, orderId) => {
+const createPosOrder = async (customer, cart, orderId, paymentMethod) => {
     try {
         const pos_branch_id = await AsyncStorage.getItem("pos_branch");
         const pos_config = await AsyncStorage.getItem("pos_config");
@@ -122,7 +122,7 @@ const createPosOrder = async (customer, cart, orderId) => {
         const order = [
             {
                 'data': {
-                    'name': 'POS_ORDER_' + orderId.id,
+                    'name': 'POS_ORDER_' + orderId,
                     'amount_paid': amount_paid,
                     'amount_total': amount_total,
                     'amount_tax': amount_tax,
@@ -130,9 +130,9 @@ const createPosOrder = async (customer, cart, orderId) => {
                     'lines': lines,
                     'statement_ids': [[0, 0, {
                         'name': orderData.created_at,
-                        'statement_id': 49402,
-                        'account_id': 8466,
-                        'journal_id': 333,
+                        'statement_id': paymentMethod.statement_id, // 49402
+                        'account_id': paymentMethod.default_debit_account_id[0],  // 8466
+                        'journal_id': paymentMethod.id,  // 333
                         'amount': amount_paid
                     }]],
                     'pos_session_id': JSON.parse(pos_session),
@@ -212,7 +212,7 @@ const createSessionResponse = async () => {
                 model: "account.journal",
                 method: "search_read",
                 args: [[["id", "in", config_id.journal_ids]]],  // Lấy POS đang hoạt động
-                kwargs: { fields: ["id", "name"] },
+                kwargs: { fields: ["id", "name", "default_debit_account_id"] },
             }
         }, {
             headers: { Cookie: `session_id=${session_id}` },
@@ -222,7 +222,6 @@ const createSessionResponse = async () => {
             throw new Error("Không tìm thấy account journal nào!");
         }
         const payment_methods = paymentMethodResponse.data.result;
-        await AsyncStorage.setItem("payment_methods", JSON.stringify(payment_methods));
 
         // Lấy Pricelist ID
         const priceListResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
@@ -254,41 +253,69 @@ const createSessionResponse = async () => {
         await AsyncStorage.setItem("default_customer", JSON.stringify(config_id.customer_default_id));
 
         // Kiểm tra xem POS session đã tồn tại chưa
+        let pos_session_id = null;
         const sessionCheckResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
             jsonrpc: "2.0",
             method: "call",
             params: {
                 model: "pos.session",
                 method: "search",
-                args: [[["state", "=", "opened"], ["config_id", "=", config_id.id]]],
+                args: [[["state", "=", "opened"], ["config_id", "=", config_id.id], ["user_id", "=", parsedUserId]]],
                 kwargs: {},
             }
         }, {
             headers: { Cookie: `session_id=${session_id}` },
         });
-
         if (sessionCheckResponse.data.result.length > 0) {
+            pos_session_id = sessionCheckResponse.data.result[0];
             await AsyncStorage.setItem("pos_session", JSON.stringify(sessionCheckResponse.data.result[0]));
-            return { message: "POS session đã tồn tại!", session_id: sessionCheckResponse.data.result[0] };
+            // return { message: "POS session đã tồn tại!", session_id: sessionCheckResponse.data.result[0] };
         }
 
         // Tạo POS session mới
-        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
-            jsonrpc: "2.0",
-            method: "call",
-            params: {
-                model: "pos.session",
-                method: "create",
-                args: [{ user_id: parsedUserId, config_id: config_id.id }],
-                kwargs: {},
+        if (!pos_session_id) {
+            const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+                jsonrpc: "2.0",
+                method: "call",
+                params: {
+                    model: "pos.session",
+                    method: "create",
+                    args: [{ user_id: parsedUserId, config_id: config_id.id }],
+                    kwargs: {},
+                }
+            }, {
+                headers: { "Cookie": `session_id=${session_id}` }
+            });
+            if (response.data.result) {
+                pos_session_id = response.data.result;
+                await AsyncStorage.setItem("pos_session", JSON.stringify(response.data.result));
             }
-        }, {
-            headers: { "Cookie": `session_id=${session_id}` }
-        });
-        if (response.data.result) {
-            await AsyncStorage.setItem("pos_session", JSON.stringify(response.data.result));
         }
-        return response.data.result || [];
+        // Lấy dữ liệu account bank statement
+        if (pos_session_id) {
+            const responseABS = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+                jsonrpc: "2.0",
+                method: "call",
+                params: {
+                    model: "account.bank.statement",
+                    method: "search_read",
+                    args: [[["pos_session_id", "=", pos_session_id]]],
+                    kwargs: { fields: ["id", "journal_id"] },
+                }
+            }, {
+                headers: { "Cookie": `session_id=${session_id}` }
+            });
+            if (responseABS.data.result) {
+                let newPaymentMethods = payment_methods;
+                for (let i = 0; i < responseABS.data.result.length; i++) {
+                    newPaymentMethods = newPaymentMethods.map((item) =>
+                        item.id === responseABS.data.result[i].journal_id[0] ? { ...item, statement_id: responseABS.data.result[i].id } : item
+                    );
+                }
+                await AsyncStorage.setItem("payment_methods", JSON.stringify(newPaymentMethods));
+            }
+        }
+        return [];
     } catch (error) {
         throw new Error("Không thể tạo session: " + error.message);
     }
