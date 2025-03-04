@@ -11,6 +11,7 @@ import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import { setupDatabase } from './src/database/database';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 import OrderDetailScreen from './src/screens/OrderDetailScreen';
+import PosConfigScreen from './src/screens/PosConfigScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -48,6 +49,7 @@ const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
 
 export default function App() {
   const [cart, setCart] = useState([]);
+  const [posConfigId, setPosConfigId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -71,8 +73,14 @@ export default function App() {
           </Stack.Screen>
         ) : (
           <>
+            <Stack.Screen
+              name="PosConfig"
+              options={{ headerShown: true, title: "Pos Config" }}
+            >
+              {() => <PosConfigScreen posConfigId={posConfigId} setPosConfigId={setPosConfigId} />}
+            </Stack.Screen>
             <Stack.Screen name="Main">
-              {() => <TabNavigator cart={cart} setCart={setCart} setIsLoggedIn={setIsLoggedIn} />}
+              {() => <TabNavigator cart={cart} setCart={setCart} setIsLoggedIn={setIsLoggedIn} posConfigId={posConfigId} />}
             </Stack.Screen>
             <Stack.Screen
               name="Checkout"

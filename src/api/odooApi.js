@@ -175,7 +175,7 @@ const createPosOrder = async (customer, cart, orderId, paymentMethod) => {
     }
 };
 
-const createSessionResponse = async () => {
+const createSessionResponse = async (posId) => {
     try {
         const odooUrl = await AsyncStorage.getItem("odooUrl");
         const session_id = await AsyncStorage.getItem("session_id");
@@ -189,7 +189,7 @@ const createSessionResponse = async () => {
             params: {
                 model: "pos.config",
                 method: "search_read",
-                args: [[["active", "=", true]]],  // Lấy POS đang hoạt động
+                args: [[["active", "=", true], ["id", "=", posId.id]]],  // Lấy POS đang hoạt động
                 kwargs: { fields: ["id", "name", "journal_ids", "pricelist_id", "customer_default_id", "pos_branch_id", "default_seller_id", "available_pricelist_ids"] },
             }
         }, {
@@ -325,20 +325,47 @@ const fetchPosConfigs = async () => {
     try {
         const odooUrl = await AsyncStorage.getItem("odooUrl");
         const session_id = await AsyncStorage.getItem("session_id");
-        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+        const user_id = await AsyncStorage.getItem("user_id");
+        const parsedUserId = user_id ? JSON.parse(user_id) : null;
+        const responsePosConfig = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
             jsonrpc: "2.0",
             method: "call",
             params: {
                 model: "pos.config",
                 method: "search_read",
-                args: [[]],
+                args: [[["active", "=", true]]],
                 kwargs: { fields: ["id", "name"] }
             }
         }, {
             headers: { "Cookie": `session_id=${session_id}` }
         });
-
-        return response.data.result || [];
+        var listPosConfig = responsePosConfig.data.result || [];
+        if (listPosConfig.length > 0) {
+            listPosConfig = listPosConfig.map((item) =>
+                item ? { ...item, status: 'open' } : item
+            );
+            var ids = listPosConfig.map(item => item.id);
+            const sessionCheckResponse = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+                jsonrpc: "2.0",
+                method: "call",
+                params: {
+                    model: "pos.session",
+                    method: "search_read",
+                    args: [[["state", "=", "opened"], ["config_id", "in", ids], ["user_id", "=", parsedUserId]]],
+                    kwargs: { fields: ["id", "name", "config_id"] },
+                }
+            }, {
+                headers: { Cookie: `session_id=${session_id}` },
+            });
+            if (sessionCheckResponse.data.result) {
+                for (let i = 0; i < sessionCheckResponse.data.result.length; i++) {
+                    listPosConfig = listPosConfig.map((item) =>
+                        item.id === sessionCheckResponse.data.result[i].config_id[0] ? { ...item, status: 'active' } : item
+                    );
+                }
+            }
+        }
+        return listPosConfig;
     } catch (error) {
         throw new Error("Không thể lấy dữ liệu pos: " + error.message);
     }
