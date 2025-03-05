@@ -29,14 +29,48 @@ const OrderDetailScreen = () => {
                 <style>
                     body {
                         width: 100%;
-                        max-width: 600px;
-                        margin: 0 auto;
+                        margin: 0;
                         font-family: Arial, sans-serif;
-                        padding: 5px;
+                        padding: 0;
+                        font-size: 12px;
                     }
-                    h1 { text-align: center; }
-                    p { font-size: 16px; line-height: 1.5; }
-                    hr { margin: 20px 0; }
+                    h1 { 
+                        text-align: center; 
+                        font-size: 18px;
+                        margin: 0;
+                    }
+                    p { 
+                        font-size: 12px; 
+                        line-height: 1.5;
+                        margin: 3px 0;
+                        padding: 0;
+                    }
+                    hr { 
+                        margin: 10px 0; 
+                        border: 0.5px solid #ccc;
+                    }
+                    .table { 
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 10px;
+                        padding: 0;
+                    }
+                    .table th, .table td { 
+                        padding: 5px;
+                        border: 1px solid #ddd;
+                        text-align: left;
+                        font-size: 12px;
+                        margin: 0;
+                    }
+                    .table th {
+                        background-color: #f4f4f4;
+                        font-weight: bold;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 10px;
+                        padding: 0;
+                    }
                 </style>
             </head>
             <body>
@@ -47,10 +81,33 @@ const OrderDetailScreen = () => {
                 <p><strong>Thanh toán:</strong> ${order.payment_method_name}</p>
                 <p><strong>Ngày mua:</strong> ${order.created_at}</p>
                 <hr>
-                <p>Cảm ơn quý khách!</p>
+    
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá (VND)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${orderLines.map(item => `
+                            <tr>
+                                <td>${item.product_name}</td>
+                                <td>${item.quantity}</td>
+                                <td>${item.price}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+    
+                <hr>
+                <div class="footer">
+                    <p>Cảm ơn quý khách đã mua sắm!</p>
+                </div>
             </body>
         </html>
-    `;
+        `;
 
         try {
             await Print.printAsync({ html: htmlContent });
@@ -58,6 +115,7 @@ const OrderDetailScreen = () => {
             console.error("Lỗi in hóa đơn:", error);
         }
     };
+
 
     if (!order) return <Text style={styles.loadingText}>Đang tải đơn hàng...</Text>;
 

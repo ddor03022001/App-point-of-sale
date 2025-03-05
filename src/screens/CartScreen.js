@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createOrder } from '../database/database';
 import { createSessionResponse, createPosOrder } from '../api/odooApi';

@@ -8,6 +8,7 @@ import CartScreen from './src/screens/CartScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
+import MRPScreen from './src/screens/MRPScreen';
 import { setupDatabase } from './src/database/database';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 import OrderDetailScreen from './src/screens/OrderDetailScreen';
@@ -24,6 +25,7 @@ const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
         if (route.name === 'Home') iconName = 'home-outline';
         else if (route.name === 'Cart') iconName = 'cart-outline';
         else if (route.name === 'Profile') iconName = 'person-outline';
+        else if (route.name === 'MRP') iconName = 'flask-outline';
         else if (route.name === 'OrderHistory') iconName = 'time-outline';
         return <Ionicons name={iconName} size={size} color={color} />;
       },
@@ -40,6 +42,9 @@ const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
     </Tab.Screen>
     <Tab.Screen name="OrderHistory">
       {(props) => <OrderHistoryScreen {...props} />}
+    </Tab.Screen>
+    <Tab.Screen name="MRP">
+      {(props) => <MRPScreen {...props} />}
     </Tab.Screen>
     <Tab.Screen name="Profile">
       {(props) => <ProfileScreen {...props} setIsLoggedIn={setIsLoggedIn} />}

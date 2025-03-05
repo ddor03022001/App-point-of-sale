@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator, ScrollView, Alert } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from "@expo/vector-icons";
 import { fetchPartners } from '../api/odooApi';
@@ -70,11 +70,11 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
             const updatedCart = await Promise.all(new_cart);
             setCart(updatedCart);
         } catch (error) {
-            alert("Đã xảy ra lỗi khi set pricelist!");
+            Alert.alert("Thất bại", error.message);
         }
     };
 
-    const totalAmount = cart.reduce((total, item) => total + item.list_price * item.quantity, 0).toLocaleString();
+    const totalAmount = cart.reduce((total, item) => total + item.list_price * item.quantity, 0);
 
     // Hàm thanh toán
     const handleConfirmOrder = async () => {
@@ -87,11 +87,11 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
                 await createOrderLine(order_id, item);
             }
             await createPosOrder(selectedCustomer, cart, order_id, paymentMethod);
-            alert(`Đơn hàng được tạo thành công`);
+            Alert.alert("Thành công", 'Đơn hàng được tạo thành công!');
             defaultSetCart([]);
             navigation.goBack(); // ✅ Quay lại màn hình trước
         } catch (error) {
-            alert("Đã xảy ra lỗi khi xử lý đơn hàng!");
+            Alert.alert("Thất bại", error.message);
         } finally {
             setLoadingCreatePosOrder(false); // Kết thúc loading sau khi xử lý xong
         }
@@ -241,7 +241,7 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
 
                 {/* Tổng tiền + Nút xác nhận */}
                 <View style={styles.summary}>
-                    <Text style={styles.totalText}>Tổng tiền: {totalAmount} VND</Text>
+                    <Text style={styles.totalText}>Tổng tiền: {totalAmount.toLocaleString()} VND</Text>
                     {/* Hiển thị ActivityIndicator khi loading là true */}
                     {loadingCreatePosOrder ? (
                         <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
