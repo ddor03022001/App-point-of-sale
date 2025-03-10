@@ -45,7 +45,36 @@ const fetchProducts = async () => {
             headers: { "Cookie": `session_id=${session_id}` }
         });
 
-        return response.data.result || [];
+        let products = response.data.result || [];
+
+        if (products.length > 0) {
+            const mrpRequests = products.map(async (product) => {
+                if (product.taxes_id.length > 0) {
+                    const responseTax = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+                        jsonrpc: "2.0",
+                        method: "call",
+                        params: {
+                            model: "account.tax",
+                            method: "search_read",
+                            args: [[["id", "=", product.taxes_id[0]]]],
+                            kwargs: { fields: ["id", "amount"] }
+                        }
+                    }, {
+                        headers: { "Cookie": `session_id=${session_id}` }
+                    });
+
+                    return {
+                        ...product,
+                        taxes_id: responseTax.data.result.length > 0 ? responseTax.data.result : null
+                    };
+                }
+                return product;
+            });
+
+            products = await Promise.all(mrpRequests);
+        }
+
+        return products;
     } catch (error) {
         throw new Error("Không thể lấy dữ liệu sản phẩm: " + error.message);
     }
@@ -96,6 +125,54 @@ const createPosMrp = async (productMrp, quantityMrp, products) => {
     }
 };
 
+const validateSession = async () => {
+    try {
+        const pos_session = await AsyncStorage.getItem("pos_session");
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+
+        const pos_session_id = JSON.parse(pos_session);
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "pos.session",
+                method: "action_close_session_from_mobile",
+                args: [pos_session_id],
+                kwargs: {}
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+        return response.data.result || false;
+    } catch (error) {
+        throw new Error("Không thể đóng ca: " + error.message);
+    }
+};
+
+const getNamePosOrderMobile = async () => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "sea.pos.mobile.app",
+                method: "get_name_bill_mobile",
+                args: [],
+                kwargs: {}
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+        return response.data.result || false;
+    } catch (error) {
+        throw new Error("Không thể lấy được name: " + error.message);
+    }
+};
+
 const fetchProductMrps = async () => {
     try {
         const odooUrl = await AsyncStorage.getItem("odooUrl");
@@ -106,7 +183,7 @@ const fetchProductMrps = async () => {
             params: {
                 model: "product.product",
                 method: "search_read",
-                args: [[["available_in_pos", "=", true], ["is_pos_mrp", "=", true], ["tracking", "=", 'none']]],
+                args: [[["available_in_pos", "=", true], ["is_pos_mrp", "=", true], ["tracking", "=", "none"]]],
                 kwargs: { fields: ["id", "name", "is_pos_mrp", "product_mrp_ids"] }
             }
         }, {
@@ -182,17 +259,16 @@ const createPosOrder = async (customer, cart, orderId, paymentMethod) => {
         const default_saleperson = await AsyncStorage.getItem("default_saleperson");
         const default_location_id = await AsyncStorage.getItem("default_location_id");
         const orderData = await getOrderById(orderId);
-
         // Tạo danh sách `lines` từ `cart`
         const lines = cart.map(item => [
             0, 0, {
                 'qty': item.quantity,
                 'price_unit': item.list_price,
-                'price_subtotal': item.quantity * item.list_price,
-                'price_subtotal_incl': item.quantity * item.list_price, // Giả sử thuế 10%
+                'price_subtotal': item.taxes_id ? (item.quantity * item.list_price * (100 - item.taxes_id[0].amount)) / 100 : item.quantity * item.list_price,
+                'price_subtotal_incl': item.quantity * item.list_price,
                 'discount': 0,
                 'product_id': item.id,
-                'tax_ids': [[6, false, []]],
+                'tax_ids': [[6, false, [item.taxes_id[0].id]]],
                 'pack_lot_ids': [],
                 'note': '',
                 'combo_item_ids': {},
@@ -215,7 +291,7 @@ const createPosOrder = async (customer, cart, orderId, paymentMethod) => {
         // Tính tổng tiền hàng
         const amount_total = lines.reduce((sum, line) => sum + line[2].price_subtotal_incl, 0);
         const amount_paid = amount_total;
-        const amount_tax = amount_total;
+        const amount_tax = lines.reduce((sum, line) => sum + (line[2].price_subtotal_incl - line[2].price_subtotal), 0);
 
         const order = [
             {
@@ -534,5 +610,5 @@ const getPricelistItems = async (pricelist_id) => {
 
 export {
     loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse, createPosOrder,
-    fetchPartners, getPricelistItems, fetchProductMrps, createPosMrp
+    fetchPartners, getPricelistItems, fetchProductMrps, createPosMrp, validateSession
 };

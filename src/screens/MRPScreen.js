@@ -32,7 +32,7 @@ const MRPScreen = () => {
     handleQuantityMrp = () => {
         const newProducts = products.filter(item => item.quantity > 0);
         const totalAmount = newProducts.reduce((total, item) => total + item.quantity * item.percent / 100, 0);
-        return totalAmount
+        return totalAmount;
     };
 
     const handleQuantityChange = (id, value) => {

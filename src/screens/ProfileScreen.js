@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Button, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearOrders } from '../database/database';
+import { validateSession } from '../api/odooApi';
 
 const ProfileScreen = ({ setIsLoggedIn }) => {
     const [userName, setUserName] = useState('null');
@@ -29,7 +30,7 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
                     setSalePerson(JSON.parse(saleperson_id)[1]);
                 }
             } catch (error) {
-                console.error('Lỗi khi lấy dữ liệu setting:', error);
+                Alert.alert("Đã xảy ra lỗi", error.message);
             }
         };
 
@@ -41,7 +42,21 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
             await AsyncStorage.clear();
             setIsLoggedIn(false);
         } catch (error) {
-            console.error('Lỗi khi xóa session_id:', error);
+            Alert.alert("Đã xảy ra lỗi", error.message);
+        }
+    };
+
+    const closeShift = async () => {
+        try {
+            const value = await validateSession();
+            if (!value) {
+                Alert.alert("Đã xảy ra lỗi", "Đóng ca thất bại");
+            } else {
+                await AsyncStorage.clear();
+                setIsLoggedIn(false);
+            }
+        } catch (error) {
+            Alert.alert("Đã xảy ra lỗi", error.message);
         }
     };
 
@@ -62,6 +77,10 @@ const ProfileScreen = ({ setIsLoggedIn }) => {
 
                 <TouchableOpacity style={styles.button} onPress={clearOrders}>
                     <Text style={styles.buttonText}>Xóa toàn bộ đơn hàng</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.button} onPress={closeShift}>
+                    <Text style={styles.buttonText}>Đóng ca</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>

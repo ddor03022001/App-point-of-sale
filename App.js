@@ -17,7 +17,7 @@ import PosConfigScreen from './src/screens/PosConfigScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
+const TabNavigator = ({ products, cart, setCart, setIsLoggedIn }) => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarIcon: ({ color, size }) => {
@@ -35,7 +35,7 @@ const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
     })}
   >
     <Tab.Screen name="Home">
-      {(props) => <HomeScreen {...props} cart={cart} setCart={setCart} />}
+      {(props) => <HomeScreen {...props} cart={cart} setCart={setCart} products={products} />}
     </Tab.Screen>
     <Tab.Screen name="Cart">
       {(props) => <CartScreen {...props} cart={cart} setCart={setCart} />}
@@ -54,7 +54,8 @@ const TabNavigator = ({ cart, setCart, setIsLoggedIn }) => (
 
 export default function App() {
   const [cart, setCart] = useState([]);
-  const [posConfigId, setPosConfigId] = useState(null);
+  const [products, setproducts] = useState([]);
+  const [posConfigIds, setPosConfigIds] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function App() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isLoggedIn ? (
           <Stack.Screen name="Login">
-            {(props) => <LoginScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
+            {(props) => <LoginScreen {...props} setIsLoggedIn={setIsLoggedIn} setPosConfigIds={setPosConfigIds} />}
           </Stack.Screen>
         ) : (
           <>
@@ -82,10 +83,10 @@ export default function App() {
               name="PosConfig"
               options={{ headerShown: true, title: "Pos Config" }}
             >
-              {() => <PosConfigScreen posConfigId={posConfigId} setPosConfigId={setPosConfigId} />}
+              {() => <PosConfigScreen posConfigIds={posConfigIds} setproducts={setproducts} />}
             </Stack.Screen>
             <Stack.Screen name="Main">
-              {() => <TabNavigator cart={cart} setCart={setCart} setIsLoggedIn={setIsLoggedIn} posConfigId={posConfigId} />}
+              {() => <TabNavigator products={products} cart={cart} setCart={setCart} setIsLoggedIn={setIsLoggedIn} />}
             </Stack.Screen>
             <Stack.Screen
               name="Checkout"

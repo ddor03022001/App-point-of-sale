@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Alert, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { TextInput, Button, Text, IconButton } from 'react-native-paper';
-import { loginOdoo } from '../api/odooApi';
+import { loginOdoo, fetchPosConfigs, fetchProducts } from '../api/odooApi';
 
-const LoginScreen = ({ setIsLoggedIn }) => {
+const LoginScreen = ({ setIsLoggedIn, setPosConfigIds }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [secureText, setSecureText] = useState(true); // Ẩn/hiện mật khẩu
@@ -12,8 +12,9 @@ const LoginScreen = ({ setIsLoggedIn }) => {
     const handleLogin = async () => {
         setLoading(true); // Bắt đầu loading
         try {
-            await loginOdoo(email, password);         
-            // Alert.alert("Đăng nhập thành công!", `User: ${result.username}`);
+            await loginOdoo(email, password);
+            const posConfigs = await fetchPosConfigs();
+            setPosConfigIds(posConfigs);
             setIsLoggedIn(true); // Chuyển đến màn hình chính
         } catch (error) {
             Alert.alert("Đăng nhập thất bại", error.message);

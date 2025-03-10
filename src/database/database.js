@@ -109,6 +109,7 @@ export const clearOrders = async () => {
 
     try {
         await db.runAsync("DELETE FROM orders;");
+        await db.runAsync("DELETE FROM orderLines;");
         console.log("✅ Đã xóa toàn bộ đơn hàng trong database.");
     } catch (error) {
         console.error("❌ Lỗi khi xóa đơn hàng:", error);

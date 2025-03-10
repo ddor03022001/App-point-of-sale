@@ -1,43 +1,32 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { View, Text, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from 'react-native-paper';
-import { fetchPosConfigs, createSessionResponse } from '../api/odooApi';
+import { createSessionResponse, fetchProducts } from '../api/odooApi';
 
-const PosConfigScreen = () => {
-    const [posConfigs, setPosConfigs] = useState([]);
+const PosConfigScreen = ({ posConfigIds, setproducts }) => {
     const [loading, setLoading] = useState(false);
     const [loadingPos, setLoadingPos] = useState(null);
 
-    const fetchPosConfigList = async () => {
-        const posConfigList = await fetchPosConfigs(); // Lấy danh sách pos
-        setPosConfigs(posConfigList);
-    };
-
     const navigation = useNavigation();
-
-    useFocusEffect(
-        useCallback(() => {
-            fetchPosConfigList();
-        }, [])
-    );
 
     const posCreateSession = async (posId) => {
         setLoading(true);
         setLoadingPos(posId.id);
         try {
-            const filteredPos = posConfigs.filter(pos =>
+            const filteredPos = posConfigIds.filter(pos =>
                 pos.status === 'active'
             )
             if (filteredPos.length > 0) {
                 Alert.alert("Thông báo", "Chỉ được mở 1 ca bán hàng tại 1 thời điểm");
             } else {
                 await createSessionResponse(posId);
+                const products = await fetchProducts();
+                setproducts(products);
                 navigation.navigate("Main");
             }
         } catch (error) {
-            Alert.alert("Đăng nhập thất bại", error.message);
+            Alert.alert("Mở session thất bại", error.message);
         } finally {
             setLoadingPos(null);
             setLoading(false);
@@ -49,9 +38,11 @@ const PosConfigScreen = () => {
         setLoadingPos(posId.id);
         try {
             await createSessionResponse(posId);
+            const products = await fetchProducts();
+            setproducts(products);
             navigation.navigate("Main");
         } catch (error) {
-            Alert.alert("Đăng nhập thất bại", error.message);
+            Alert.alert("Mở session thất bại", error.message);
         } finally {
             setLoadingPos(null);
             setLoading(false);
@@ -60,11 +51,11 @@ const PosConfigScreen = () => {
 
     return (
         <View style={styles.container}>
-            {posConfigs.length === 0 ? (
+            {posConfigIds.length === 0 ? (
                 <Text style={styles.emptyText}>Không có pos nào 😢</Text>
             ) : (
                 <FlatList
-                    data={posConfigs}
+                    data={posConfigIds}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
                         <View style={styles.cartItem}>
