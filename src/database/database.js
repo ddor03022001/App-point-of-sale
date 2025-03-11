@@ -3,11 +3,12 @@ import * as SQLite from 'expo-sqlite/next';
 let db; // Biến database toàn cục
 
 export const setupDatabase = async () => {
-    db = await SQLite.openDatabaseAsync('test.db'); // Mở database
+    db = await SQLite.openDatabaseAsync('posMobile.db'); // Mở database
 
     await db.execAsync(`
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
             amount_total REAL,
             amount_tax REAL,
             pricelist_id INTEGER,
@@ -37,15 +38,15 @@ export const setupDatabase = async () => {
 };
 
 // ✅ Hàm tạo order mới
-export const createOrder = async (amount_total, paymentMethod, customer, salePerson, pricelist) => {
+export const createOrder = async (amount_total, paymentMethod, customer, salePerson, pricelist, name_order) => {
     if (!db) {
         console.log("❌ Database chưa sẵn sàng!");
         return null;
     }
 
     const result = await db.runAsync(
-        `INSERT INTO orders (amount_total, pricelist_id, pricelist_name, customer_id, customer_name, saleperson_id, saleperson_name, payment_method_id, payment_method_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'));`,
-        [amount_total, pricelist[0], pricelist[1], customer.id, customer.name, salePerson[0], salePerson[1], paymentMethod.id, paymentMethod.name]
+        `INSERT INTO orders (name, amount_total, pricelist_id, pricelist_name, customer_id, customer_name, saleperson_id, saleperson_name, payment_method_id, payment_method_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'));`,
+        [name_order, amount_total, pricelist[0], pricelist[1], customer.id, customer.name, salePerson[0], salePerson[1], paymentMethod.id, paymentMethod.name]
     );
 
     console.log("✅ Order đã được lưu:", result.lastInsertRowId);

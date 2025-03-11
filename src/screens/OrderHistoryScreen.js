@@ -29,7 +29,7 @@ const OrderHistoryScreen = () => {
                 renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
                         <View style={styles.orderItem}>
-                            <Text>🛒 Đơn hàng #{item.id}</Text>
+                            <Text>🛒 Đơn hàng #{item.name}</Text>
                             <Text>💰 Tổng tiền: {item.amount_total} VND</Text>
                             <Text>🤦‍♂️ Người bán: {item.saleperson_name}</Text>
                             <Text>🤦 Người mua: {item.customer_name}</Text>

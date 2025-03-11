@@ -74,7 +74,7 @@ const OrderDetailScreen = () => {
                 </style>
             </head>
             <body>
-                <h1>Đơn hàng #${order.id}</h1>
+                <h1>Đơn hàng #${order.name}</h1>
                 <p><strong>Tổng tiền:</strong> ${order.amount_total} VND</p>
                 <p><strong>Người bán:</strong> ${order.saleperson_name}</p>
                 <p><strong>Người mua:</strong> ${order.customer_name}</p>
@@ -123,7 +123,7 @@ const OrderDetailScreen = () => {
         <View style={styles.container}>
             {/* Thông tin đơn hàng */}
             <View style={styles.orderInfo}>
-                <Text style={styles.orderTitle}>📦 Đơn hàng #{order.id}</Text>
+                <Text style={styles.orderTitle}>📦 Đơn hàng #{order.name}</Text>
                 <Text style={styles.orderText}>💰 Tổng tiền: {order.amount_total} VND</Text>
                 <Text style={styles.orderText}>🤦‍♂️ Người bán: {order.saleperson_name}</Text>
                 <Text style={styles.orderText}>🤦 Người mua: {order.customer_name}</Text>

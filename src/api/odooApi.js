@@ -248,7 +248,7 @@ const fetchPartners = async () => {
     }
 };
 
-const createPosOrder = async (customer, cart, orderId, paymentMethod) => {
+const createPosOrder = async (customer, cart, orderId, paymentMethod, name_order) => {
     try {
         const pos_branch_id = await AsyncStorage.getItem("pos_branch");
         const pos_config = await AsyncStorage.getItem("pos_config");
@@ -259,6 +259,7 @@ const createPosOrder = async (customer, cart, orderId, paymentMethod) => {
         const default_saleperson = await AsyncStorage.getItem("default_saleperson");
         const default_location_id = await AsyncStorage.getItem("default_location_id");
         const orderData = await getOrderById(orderId);
+
         // Tạo danh sách `lines` từ `cart`
         const lines = cart.map(item => [
             0, 0, {
@@ -296,7 +297,7 @@ const createPosOrder = async (customer, cart, orderId, paymentMethod) => {
         const order = [
             {
                 'data': {
-                    'name': 'POS_ORDER_' + orderId,
+                    'name': name_order,
                     'amount_paid': amount_paid,
                     'amount_total': amount_total,
                     'amount_tax': amount_tax,
@@ -610,5 +611,5 @@ const getPricelistItems = async (pricelist_id) => {
 
 export {
     loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse, createPosOrder,
-    fetchPartners, getPricelistItems, fetchProductMrps, createPosMrp, validateSession
+    fetchPartners, getPricelistItems, fetchProductMrps, createPosMrp, validateSession, getNamePosOrderMobile
 };
