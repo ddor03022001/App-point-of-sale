@@ -75,7 +75,7 @@ const OrderDetailScreen = () => {
             </head>
             <body>
                 <h1>Đơn hàng #${order.name}</h1>
-                <p><strong>Tổng tiền:</strong> ${order.amount_total} VND</p>
+                <p><strong>Tổng tiền:</strong> ${order.amount_total.toLocaleString()} VND</p>
                 <p><strong>Người bán:</strong> ${order.saleperson_name}</p>
                 <p><strong>Người mua:</strong> ${order.customer_name}</p>
                 <p><strong>Thanh toán:</strong> ${order.payment_method_name}</p>
@@ -95,7 +95,7 @@ const OrderDetailScreen = () => {
                             <tr>
                                 <td>${item.product_name}</td>
                                 <td>${item.quantity}</td>
-                                <td>${item.price}</td>
+                                <td>${item.price.toLocaleString()}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -124,7 +124,7 @@ const OrderDetailScreen = () => {
             {/* Thông tin đơn hàng */}
             <View style={styles.orderInfo}>
                 <Text style={styles.orderTitle}>📦 Đơn hàng #{order.name}</Text>
-                <Text style={styles.orderText}>💰 Tổng tiền: {order.amount_total} VND</Text>
+                <Text style={styles.orderText}>💰 Tổng tiền: {order.amount_total.toLocaleString()} VND</Text>
                 <Text style={styles.orderText}>🤦‍♂️ Người bán: {order.saleperson_name}</Text>
                 <Text style={styles.orderText}>🤦 Người mua: {order.customer_name}</Text>
                 <Text style={styles.orderText}>🧾 Thanh toán: {order.payment_method_name}</Text>
@@ -138,12 +138,11 @@ const OrderDetailScreen = () => {
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
                     <View style={styles.productCard}>
-                        <Image source={{ uri: 'https://via.placeholder.com/100' }} style={styles.productImage} />
                         <View style={styles.productDetails}>
                             <Text style={styles.productName}>{item.product_name}</Text>
-                            <Text style={styles.productText}>💲 Giá: {item.price} VND</Text>
+                            <Text style={styles.productText}>💲 Giá: {item.price.toLocaleString()} VND</Text>
                             <Text style={styles.productText}>📦 Số lượng: {item.quantity}</Text>
-                            <Text style={styles.productText}>🛡️ Thuế: {item.tax_id}</Text>
+                            <Text style={styles.productText}>🛡️ Thuế: {item.tax_id} %</Text>
                         </View>
                     </View>
                 )}

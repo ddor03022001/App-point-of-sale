@@ -19,6 +19,7 @@ export const setupDatabase = async () => {
             saleperson_name TEXT,
             payment_method_id INTEGER,
             payment_method_name TEXT,
+            pos_session_id INTEGER,
             created_at TEXT
         );
 
@@ -38,15 +39,16 @@ export const setupDatabase = async () => {
 };
 
 // ✅ Hàm tạo order mới
-export const createOrder = async (amount_total, paymentMethod, customer, salePerson, pricelist, name_order) => {
+export const createOrder = async (amount_total, paymentMethod, customer, salePerson, pricelist, name_order, pos_session_id) => {
     if (!db) {
         console.log("❌ Database chưa sẵn sàng!");
         return null;
     }
 
     const result = await db.runAsync(
-        `INSERT INTO orders (name, amount_total, pricelist_id, pricelist_name, customer_id, customer_name, saleperson_id, saleperson_name, payment_method_id, payment_method_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'));`,
-        [name_order, amount_total, pricelist[0], pricelist[1], customer.id, customer.name, salePerson[0], salePerson[1], paymentMethod.id, paymentMethod.name]
+        `INSERT INTO orders (name, amount_total, pricelist_id, pricelist_name, customer_id, customer_name, saleperson_id, saleperson_name, payment_method_id, payment_method_name, pos_session_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'));`,
+        [name_order, amount_total, pricelist[0], pricelist[1], customer.id, customer.name,
+            salePerson[0], salePerson[1], paymentMethod.id, paymentMethod.name, pos_session_id]
     );
 
     console.log("✅ Order đã được lưu:", result.lastInsertRowId);
@@ -62,7 +64,7 @@ export const createOrderLine = async (order_id, product) => {
 
     tax_id = null;
     if (product.taxes_id && product.taxes_id.length > 0) {
-        tax_id = product.taxes_id[0];
+        tax_id = product.taxes_id[0].amount;
     }
 
     const result = await db.runAsync(

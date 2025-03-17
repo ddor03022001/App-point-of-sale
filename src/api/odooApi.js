@@ -248,7 +248,7 @@ const fetchPartners = async () => {
     }
 };
 
-const createPosOrder = async (customer, cart, orderId, paymentMethod, name_order) => {
+const createPosOrder = async (customer, cart, orderId, paymentMethod, name_order, promotionIds) => {
     try {
         const pos_branch_id = await AsyncStorage.getItem("pos_branch");
         const pos_config = await AsyncStorage.getItem("pos_config");
@@ -274,6 +274,8 @@ const createPosOrder = async (customer, cart, orderId, paymentMethod, name_order
                 'note': '',
                 'combo_item_ids': {},
                 'pos_branch_id': JSON.parse(pos_branch_id)[0],
+                'promotion': item.promotion ? item.promotion : false,
+                'promotion_reason': item.promotion_reason ? item.promotion_reason : "",
                 'voucher': {},
                 'session_info': {
                     'user': {
@@ -327,7 +329,11 @@ const createPosOrder = async (customer, cart, orderId, paymentMethod, name_order
                     'add_credit': false,
                     'location_id': JSON.parse(default_location_id)[0], // 571
                     'pos_branch_id': JSON.parse(pos_branch_id)[0],
-                    'session_info': { 'user': { 'id': JSON.parse(user_id), 'name': user_name }, 'pos': { 'id': JSON.parse(pos_config).id, 'name': JSON.parse(pos_config).name } }, 'currency_id': 23, 'notify_messages': {}, 'rating': '0', 'promotion_ids': []
+                    'session_info': { 'user': { 'id': JSON.parse(user_id), 'name': user_name }, 'pos': { 'id': JSON.parse(pos_config).id, 'name': JSON.parse(pos_config).name } },
+                    'currency_id': 23,
+                    'notify_messages': {},
+                    'rating': '0',
+                    'promotion_ids': promotionIds
                 }, 'to_invoice': false
             }];
         const odooUrl = await AsyncStorage.getItem("odooUrl");
@@ -368,7 +374,7 @@ const createSessionResponse = async (posId) => {
                 kwargs: {
                     fields: ["id", "name", "journal_ids", "pricelist_id", "customer_default_id",
                         "pos_branch_id", "default_seller_id", "available_pricelist_ids", "stock_location_id",
-                        "location_dest_id", "mrp_picking_type_id"]
+                        "location_dest_id", "mrp_picking_type_id", "promotion_ids"]
                 },
             }
         }, {
@@ -439,6 +445,9 @@ const createSessionResponse = async (posId) => {
 
         // Lấy mrp_picking_type_id  
         await AsyncStorage.setItem("default_mrp_picking_type_id", JSON.stringify(config_id.mrp_picking_type_id));
+
+        // Lấy prmotion_ids  
+        await AsyncStorage.setItem("promotion_ids", JSON.stringify(config_id.promotion_ids));
 
         // Kiểm tra xem POS session đã tồn tại chưa
         let pos_session_id = null;
@@ -609,7 +618,112 @@ const getPricelistItems = async (pricelist_id) => {
     }
 };
 
+const getpromotions = async () => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const promotion_ids = await AsyncStorage.getItem("promotion_ids");
+        const parsedPromotionIds = promotion_ids ? JSON.parse(promotion_ids) : [];
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "pos.promotion",
+                method: "search_read",
+                args: [[["id", "in", parsedPromotionIds], ["active", "=", true], ["type", "in", ["1_discount_total_order",
+                    "14_buy_the_total_bill_and_get_a_gift", "15_cash_discount_total_order"]]]],
+                kwargs: {
+                    fields: ["id", "name", "discount_order_ids", "buy_the_total_bill_and_get_a_gift_ids",
+                        "cash_discount_total_order", "type", "start_date", "end_date", "product_id"]
+                }
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+        let promotions = response.data.result || [];
+        if (promotions && promotions.length > 0) {
+            promotions.unshift({ "id": 99999, "name": "Không áp dụng chương trình khuyến mãi", "type": "none" });
+        }
+        return promotions;
+    } catch (error) {
+        throw new Error("Không thể lấy dữ liệu promotions: " + error.message);
+    }
+};
+
+const getItempromotion1s = async (item_ids) => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "pos.promotion.discount.order",
+                method: "search_read",
+                args: [[["id", "in", item_ids]]],
+                kwargs: {
+                    fields: ["id", "minimum_amount", "discount"]
+                }
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+        return response.data.result || [];;
+    } catch (error) {
+        throw new Error("Không thể lấy dữ liệu promotions: " + error.message);
+    }
+};
+
+const getItempromotion14s = async (item_ids) => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "buy.the.total.bill.and.get.a.gift",
+                method: "search_read",
+                args: [[["id", "in", item_ids]]],
+                kwargs: {
+                    fields: ["id", "product_id", "total_bill"]
+                }
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+        return response.data.result || [];;
+    } catch (error) {
+        throw new Error("Không thể lấy dữ liệu promotions: " + error.message);
+    }
+};
+
+const getItempromotion15s = async (item_ids) => {
+    try {
+        const odooUrl = await AsyncStorage.getItem("odooUrl");
+        const session_id = await AsyncStorage.getItem("session_id");
+        const response = await axios.post(`${odooUrl}/web/dataset/call_kw`, {
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+                model: "pos.promotion.cash.discount.total.order",
+                method: "search_read",
+                args: [[["id", "in", item_ids]]],
+                kwargs: {
+                    fields: ["id", "minimum_amount", "discount"]
+                }
+            }
+        }, {
+            headers: { "Cookie": `session_id=${session_id}` }
+        });
+        return response.data.result || [];;
+    } catch (error) {
+        throw new Error("Không thể lấy dữ liệu promotions: " + error.message);
+    }
+};
+
 export {
     loginOdoo, fetchProducts, fetchPosConfigs, fetchPriceLists, createSessionResponse, createPosOrder,
-    fetchPartners, getPricelistItems, fetchProductMrps, createPosMrp, validateSession, getNamePosOrderMobile
+    fetchPartners, getPricelistItems, fetchProductMrps, createPosMrp, validateSession, getNamePosOrderMobile,
+    getpromotions, getItempromotion1s, getItempromotion14s, getItempromotion15s
 };

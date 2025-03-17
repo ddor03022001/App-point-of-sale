@@ -6,23 +6,28 @@ import { fetchPartners } from '../api/odooApi';
 import { createOrder, createOrderLine, getOrderById } from '../database/database';
 import { createPosOrder, getNamePosOrderMobile } from '../api/odooApi';
 import { getValuePricelist } from "../method/methodPricelist";
+import { PromotionActive, addPromotionIncart } from "../method/methodPromotion";
 import { useNavigation } from '@react-navigation/native';
 import * as Print from 'expo-print';
 
 
-const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
+const CheckoutScreen = ({ promotions, defaultCart, defaultSetCart, products }) => {
     const [cart, setCart] = useState(defaultCart);
     const [customers, setCustomers] = useState([]);
     const [paymentMethods, setPaymentMethods] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
+    const [paymentMethod, setPaymentMethod] = useState(null);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
+    const [listPromotionActive, setListPromotionActive] = useState([]);
+    const [selectedPromotion, setSelectedPromotion] = useState(promotions[0]);
+    const [isPromotionModalVisible, setPromotionModalVisible] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [loadingCreatePosOrder, setLoadingCreatePosOrder] = useState(false);
     const [priceLists, setPriceLists] = useState([]);
     const [selectedPriceList, setSelectedPriceList] = useState(null);
     const [isPriceListModalVisible, setPriceListModalVisible] = useState(false);
+    const [promotionIds, setPromotionIds] = useState([]);
     const navigation = useNavigation();
 
     useEffect(() => {
@@ -50,6 +55,8 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
                 }
                 setSelectedPriceList(data_pricelist);
                 setValuePricelist(data_pricelist);
+                const promotion_actives = await PromotionActive(promotions);
+                setListPromotionActive(promotion_actives);
             } catch (error) {
                 console.error(error);
             } finally {
@@ -114,7 +121,7 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
                 </head>
                 <body>
                     <h1>Đơn hàng #${order.name}</h1>
-                    <p><strong>Tổng tiền:</strong> ${order.amount_total} VND</p>
+                    <p><strong>Tổng tiền:</strong> ${order.amount_total.toLocaleString()} VND</p>
                     <p><strong>Người bán:</strong> ${order.saleperson_name}</p>
                     <p><strong>Người mua:</strong> ${order.customer_name}</p>
                     <p><strong>Thanh toán:</strong> ${order.payment_method_name}</p>
@@ -134,7 +141,7 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
                                 <tr>
                                     <td>${item.name}</td>
                                     <td>${item.quantity}</td>
-                                    <td>${item.list_price * item.quantity}</td>
+                                    <td>${(item.list_price * item.quantity).toLocaleString()}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -165,6 +172,15 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
 
             const updatedCart = await Promise.all(new_cart);
             setCart(updatedCart);
+            setSelectedPromotion(promotions[0]);
+        } catch (error) {
+            Alert.alert("Thất bại", error.message);
+        }
+    };
+
+    const setValuePromotion = async (promotion) => {
+        try {
+            await addPromotionIncart(setCart, promotion, totalAmount, products, cart, setPromotionIds);
         } catch (error) {
             Alert.alert("Thất bại", error.message);
         }
@@ -178,17 +194,18 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
         try {
             const selectedSaleperson = await AsyncStorage.getItem('default_saleperson');
             const pricelist = await AsyncStorage.getItem('default_pricelist');
+            const pos_session_id = await AsyncStorage.getItem('pos_session');
             const orderName = await getNamePosOrderMobile();
             if (!orderName) {
                 return Alert.alert("Thất bại", 'Không lấy được name pos order!');
             }
-            const order_id = await createOrder(totalAmount, paymentMethod, selectedCustomer, JSON.parse(selectedSaleperson), JSON.parse(pricelist), orderName);
+            const order_id = await createOrder(totalAmount, paymentMethod, selectedCustomer, JSON.parse(selectedSaleperson), JSON.parse(pricelist), orderName, JSON.parse(pos_session_id));
             for (const item of cart) {
                 await createOrderLine(order_id, item);
             }
             const orderData = await getOrderById(order_id);
             await printReceipt(orderData);
-            await createPosOrder(selectedCustomer, cart, order_id, paymentMethod, orderName);
+            await createPosOrder(selectedCustomer, cart, order_id, paymentMethod, orderName, promotionIds);
             Alert.alert("Thành công", 'Đơn hàng được tạo thành công!');
             defaultSetCart([]);
             navigation.goBack(); // ✅ Quay lại màn hình trước
@@ -198,12 +215,6 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
             setLoadingCreatePosOrder(false); // Kết thúc loading sau khi xử lý xong
         }
     };
-
-    // const handleConfirmOrder = () => {
-    //     alert(`Đơn hàng đã được xác nhận!\nKhách hàng: ${selectedCustomer.name}\nPhương thức thanh toán: ${paymentMethod}`);
-    //     defaultSetCart([]);
-    //     navigation.goBack();
-    // };
 
     const filteredCustomers = customers.filter((customer) =>
         customer.name.toLowerCase().includes(searchText.toLowerCase()) || String(customer.mobile || "").includes(searchText)
@@ -216,8 +227,8 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
             <View style={styles.container}>
                 {/* Danh sách sản phẩm */}
                 {cart.length > 0 ? (
-                    cart.map((item) => (
-                        <View key={item.id} style={styles.item}>
+                    cart.map((item, index) => (
+                        <View key={`${item.id}-${index}`} style={styles.item}>
                             <View style={styles.itemColumn}>
                                 <Text style={styles.itemText}>{item.name}</Text>
                             </View>
@@ -265,6 +276,43 @@ const CheckoutScreen = ({ defaultCart, defaultSetCart }) => {
                                 )}
                             />
                             <TouchableOpacity style={styles.closeButton} onPress={() => setPriceListModalVisible(false)}>
+                                <Text style={styles.closeButtonText}>Đóng</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Chọn Promotion */}
+                <Text style={styles.sectionTitle}>Chương trình khuyến mãi</Text>
+                <TouchableOpacity style={styles.customerSelect} onPress={() => setPromotionModalVisible(true)}>
+                    <Text style={styles.customerSelectText}>
+                        {selectedPromotion.name}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="black" />
+                </TouchableOpacity>
+
+                {/* Modal chọn Promotion */}
+                <Modal visible={isPromotionModalVisible} animationType="slide" transparent={true}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Chọn chương trình khuyến mãi</Text>
+                            <FlatList
+                                data={listPromotionActive}
+                                keyExtractor={(item) => item.id.toString()}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.customerItem}
+                                        onPress={() => {
+                                            setValuePromotion(item);
+                                            setSelectedPromotion(item);
+                                            setPromotionModalVisible(false);
+                                        }}
+                                    >
+                                        <Text style={styles.customerItemText}>{item.name}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setPromotionModalVisible(false)}>
                                 <Text style={styles.closeButtonText}>Đóng</Text>
                             </TouchableOpacity>
                         </View>

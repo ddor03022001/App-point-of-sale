@@ -9,22 +9,22 @@ const CartScreen = ({ cart, setCart }) => {
 
     const navigation = useNavigation();
     // Hàm tăng số lượng
-    const increaseQuantity = (id) => {
-        const newCart = cart.map((item) =>
-            item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-        setCart(newCart);
-    };
+    // const increaseQuantity = (id) => {
+    //     const newCart = cart.map((item) =>
+    //         item.id === id ? { ...item, quantity: parseFloat(item.quantity) + 1.0 } : item
+    //     );
+    //     setCart(newCart);
+    // };
 
     // Hàm giảm số lượng
-    const decreaseQuantity = (id) => {
-        const newCart = cart
-            .map((item) =>
-                item.id === id ? { ...item, quantity: item.quantity - 1 } : item
-            )
-            .filter((item) => item.quantity > 0); // Xoá sản phẩm nếu số lượng về 0
-        setCart(newCart);
-    };
+    // const decreaseQuantity = (id) => {
+    //     const newCart = cart
+    //         .map((item) =>
+    //             item.id === id ? { ...item, quantity: parseFloat(item.quantity) - 1.0 } : item
+    //         )
+    //         .filter((item) => item.quantity > 0); // Xoá sản phẩm nếu số lượng về 0
+    //     setCart(newCart);
+    // };
 
     // Hàm xóa sản phẩm khỏi giỏ hàng
     const removeItem = (id) => {
@@ -34,6 +34,26 @@ const CartScreen = ({ cart, setCart }) => {
     // Tính tổng giá trị giỏ hàng
     const getTotalPrice = () => {
         return cart.reduce((total, item) => total + item.list_price * item.quantity, 0);
+    };
+
+    const handleQuantityChange = (id, value) => {
+        if (value === ".") {
+            return;
+        }
+        let newValue = value.replace(/[^0-9.]/g, "");
+        const dotCount = (newValue.match(/\./g) || []).length;
+        if (dotCount > 1) return;
+
+        if (newValue.includes(".")) {
+            let [intPart, decimalPart] = newValue.split(".");
+            decimalPart = decimalPart.slice(0, 3); // Giới hạn 3 chữ số sau dấu .
+            newValue = decimalPart !== undefined ? `${intPart}.${decimalPart}` : intPart;
+        }
+        setCart(prevProducts =>
+            prevProducts.map(item =>
+                item.id === id ? { ...item, quantity: newValue } : item
+            )
+        );
     };
 
     // Hàm thanh toán
@@ -66,21 +86,26 @@ const CartScreen = ({ cart, setCart }) => {
                                     {item.list_price.toLocaleString()} VND
                                 </Text>
                                 <View style={styles.quantityContainer}>
-                                    <TouchableOpacity
+                                    {/* <TouchableOpacity
                                         style={styles.quantityButton}
                                         onPress={() => decreaseQuantity(item.id)}
                                     >
                                         <Ionicons name="remove-circle-outline" size={24} color="#ff5733" />
-                                    </TouchableOpacity>
-
-                                    <Text style={styles.quantityText}>{item.quantity}</Text>
-
+                                    </TouchableOpacity> */}
+                                    <Text>Số lượng: </Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        keyboardType="numeric"
+                                        value={item.quantity.toString()}
+                                        onChangeText={(text) => handleQuantityChange(item.id, text)}
+                                    />
+                                    {/* 
                                     <TouchableOpacity
                                         style={styles.quantityButton}
                                         onPress={() => increaseQuantity(item.id)}
                                     >
                                         <Ionicons name="add-circle-outline" size={24} color="#28a745" />
-                                    </TouchableOpacity>
+                                    </TouchableOpacity> */}
                                 </View>
                             </View>
                             <TouchableOpacity
@@ -180,6 +205,14 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         marginTop: 10,
+    },
+    input: {
+        padding: 8,
+        borderRadius: 5,
+        textAlign: "center",
+        fontSize: 16,
+        color: "red",
+        fontWeight: "bold",
     },
     totalText: {
         fontSize: 18,

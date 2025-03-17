@@ -8,11 +8,7 @@ const HomeScreen = ({ cart, setCart, products }) => {
 
     const addToCart = (item) => {
         const itemExists = cart.find((p) => p.id === item.id);
-        if (itemExists) {
-            setCart(cart.map((p) =>
-                p.id === item.id ? { ...p, quantity: p.quantity + 1 } : p
-            ));
-        } else {
+        if (!itemExists) {
             setCart([...cart, { ...item, quantity: 1 }]);
         }
     };
