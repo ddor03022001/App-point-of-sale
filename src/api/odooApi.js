@@ -641,9 +641,7 @@ const getpromotions = async () => {
             headers: { "Cookie": `session_id=${session_id}` }
         });
         let promotions = response.data.result || [];
-        if (promotions && promotions.length > 0) {
-            promotions.unshift({ "id": 99999, "name": "Không áp dụng chương trình khuyến mãi", "type": "none" });
-        }
+        promotions.unshift({ "id": 99999, "name": "Không áp dụng chương trình khuyến mãi", "type": "none" });
         return promotions;
     } catch (error) {
         throw new Error("Không thể lấy dữ liệu promotions: " + error.message);

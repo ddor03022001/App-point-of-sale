@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createOrder } from '../database/database';
 import { createSessionResponse, createPosOrder } from '../api/odooApi';
@@ -68,17 +68,15 @@ const CartScreen = ({ cart, setCart }) => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>🛒 Giỏ hàng của bạn</Text>
+        < ScrollView >
+            <View style={styles.container}>
+                <Text style={styles.title}>🛒 Giỏ hàng của bạn</Text>
 
-            {cart.length === 0 ? (
-                <Text style={styles.emptyText}>Giỏ hàng trống 😢</Text>
-            ) : (
-                <FlatList
-                    data={cart}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <View style={styles.cartItem}>
+                {cart.length === 0 ? (
+                    <Text style={styles.emptyText}>Giỏ hàng trống 😢</Text>
+                ) : (
+                    cart.map((item, index) => (
+                        <View key={`${item.id}-${index}`} style={styles.cartItem}>
                             {/* <Image source={{ uri: `data:image/png;base64,${item.image_medium}` }} style={styles.cartImage} /> */}
                             <View style={styles.cartInfo}>
                                 <Text style={styles.cartName}>{item.name}</Text>
@@ -115,23 +113,23 @@ const CartScreen = ({ cart, setCart }) => {
                                 <Ionicons name="trash-outline" size={24} color="#ff0000" />
                             </TouchableOpacity>
                         </View>
-                    )}
-                />
-            )}
+                    ))
+                )}
 
-            {/* Tổng tiền */}
-            {cart.length > 0 && (
-                <View style={styles.totalContainer}>
-                    <Text style={styles.totalText}>Tổng tiền: {getTotalPrice().toLocaleString()} VND</Text>
-                    <TouchableOpacity
-                        style={styles.checkoutButton}
-                        onPress={handleCheckout}
-                    >
-                        <Text style={styles.checkoutText}>Thanh toán</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-        </View>
+                {/* Tổng tiền */}
+                {cart.length > 0 && (
+                    <View style={styles.totalContainer}>
+                        <Text style={styles.totalText}>Tổng tiền: {getTotalPrice().toLocaleString()} VND</Text>
+                        <TouchableOpacity
+                            style={styles.checkoutButton}
+                            onPress={handleCheckout}
+                        >
+                            <Text style={styles.checkoutText}>Thanh toán</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
+        </ScrollView>
     );
 };
 
