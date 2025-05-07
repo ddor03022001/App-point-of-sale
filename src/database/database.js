@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite/next';
 let db; // Biến database toàn cục
 
 export const setupDatabase = async () => {
-    db = await SQLite.openDatabaseAsync('posMobile.db'); // Mở database
+    db = await SQLite.openDatabaseAsync('shopMobile.db'); // Mở database
 
     await db.execAsync(`
         CREATE TABLE IF NOT EXISTS orders (

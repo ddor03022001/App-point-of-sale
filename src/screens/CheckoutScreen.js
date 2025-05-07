@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator, ScrollView, Alert } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from "@expo/vector-icons";
-import { fetchPartners } from '../api/odooApi';
 import { createOrder, createOrderLine, getOrderById } from '../database/database';
 import { createPosOrder, getNamePosOrderMobile } from '../api/odooApi';
 import { getValuePricelist } from "../method/methodPricelist";
@@ -11,9 +10,8 @@ import { useNavigation } from '@react-navigation/native';
 import * as Print from 'expo-print';
 
 
-const CheckoutScreen = ({ promotions, defaultCart, defaultSetCart, products }) => {
+const CheckoutScreen = ({ promotions, defaultCart, defaultSetCart, products, customers }) => {
     const [cart, setCart] = useState(defaultCart);
-    const [customers, setCustomers] = useState([]);
     const [paymentMethods, setPaymentMethods] = useState([]);
     const [loading, setLoading] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState(null);
@@ -33,9 +31,6 @@ const CheckoutScreen = ({ promotions, defaultCart, defaultSetCart, products }) =
     useEffect(() => {
         const loadCustomers = async () => {
             try {
-                const data = await fetchPartners();
-                setCustomers(data);
-                setSelectedCustomer(data[0]);
                 const payment_methods = await AsyncStorage.getItem('payment_methods');
                 setPaymentMethods(JSON.parse(payment_methods));
                 setPaymentMethod(JSON.parse(payment_methods)[0]);

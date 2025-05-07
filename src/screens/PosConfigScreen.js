@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from 'react-native-paper';
-import { createSessionResponse, fetchProducts, getpromotions } from '../api/odooApi';
+import { createSessionResponse, fetchProducts, getpromotions, fetchPartners } from '../api/odooApi';
 
-const PosConfigScreen = ({ posConfigIds, setproducts, setPromotions }) => {
+const PosConfigScreen = ({ posConfigIds, setproducts, setPromotions, setCustomers }) => {
     const [loading, setLoading] = useState(false);
     const [loadingPos, setLoadingPos] = useState(null);
 
@@ -25,6 +25,8 @@ const PosConfigScreen = ({ posConfigIds, setproducts, setPromotions }) => {
                 setproducts(products);
                 const promotions = await getpromotions();
                 setPromotions(promotions);
+                const customers = await fetchPartners();
+                setCustomers(customers);
                 navigation.navigate("Main");
             }
         } catch (error) {
@@ -44,6 +46,8 @@ const PosConfigScreen = ({ posConfigIds, setproducts, setPromotions }) => {
             setproducts(products);
             const promotions = await getpromotions();
             setPromotions(promotions);
+            const customers = await fetchPartners();
+            setCustomers(customers);
             navigation.navigate("Main");
         } catch (error) {
             Alert.alert("Mở session thất bại", error.message);

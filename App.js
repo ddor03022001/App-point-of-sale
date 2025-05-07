@@ -55,6 +55,7 @@ const TabNavigator = ({ products, cart, setCart, setIsLoggedIn }) => (
 export default function App() {
   const [cart, setCart] = useState([]);
   const [products, setproducts] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [posConfigIds, setPosConfigIds] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [promotions, setPromotions] = useState([]);
@@ -84,7 +85,7 @@ export default function App() {
               name="PosConfig"
               options={{ headerShown: true, title: "Pos Config" }}
             >
-              {() => <PosConfigScreen posConfigIds={posConfigIds} setproducts={setproducts} setPromotions={setPromotions} />}
+              {() => <PosConfigScreen posConfigIds={posConfigIds} setproducts={setproducts} setPromotions={setPromotions} setCustomers={setCustomers} />}
             </Stack.Screen>
             <Stack.Screen name="Main">
               {() => <TabNavigator products={products} cart={cart} setCart={setCart} setIsLoggedIn={setIsLoggedIn} />}
@@ -94,7 +95,7 @@ export default function App() {
               // component={CheckoutScreen}
               options={{ headerShown: true, title: "Thanh toán" }}
             >
-              {(props) => <CheckoutScreen {...props} promotions={promotions} defaultCart={cart} defaultSetCart={setCart} products={products} />}
+              {(props) => <CheckoutScreen {...props} promotions={promotions} defaultCart={cart} defaultSetCart={setCart} products={products} customers={customers} />}
             </Stack.Screen>
             <Stack.Screen
               name="OrderDetail"
